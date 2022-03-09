@@ -1,10 +1,10 @@
 package io.ktor.io
 
-abstract class BytesDestination : Closeable {
-    abstract val closeCause: Throwable?
+public abstract class BytesDestination : Closeable {
+    public abstract val closeCause: Throwable?
 
-    abstract fun write(buffer: Buffer)
-    abstract suspend fun flush()
+    public abstract fun write(buffer: Buffer)
+    public abstract suspend fun flush()
 
-    abstract fun close(cause: Throwable? = null)
+    public abstract fun close(cause: Throwable? = null)
 }

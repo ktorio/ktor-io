@@ -2,12 +2,15 @@ plugins {
     kotlin("multiplatform") version "1.6.10"
 }
 
-group = "me.user"
+group = "io.ktor"
 version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
 }
+
+val kotlin_version: String by project.extra
+val coroutines_version: String by project.extra
 
 kotlin {
     jvm {
@@ -35,11 +38,12 @@ kotlin {
         else -> throw GradleException("Host OS is not supported in Kotlin/Native.")
     }
 
+    explicitApi()
 
     sourceSets {
         val commonMain by getting {
             dependencies {
-                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version")
             }
         }
         val commonTest by getting {

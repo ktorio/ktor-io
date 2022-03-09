@@ -1,4 +1,4 @@
 package io.ktor.io
 
-abstract class BufferedBytesSource(val bufferSize: Int) : BytesSource()
-abstract class BufferedBytesDestination(val bufferSize: Int) : BytesDestination()
+public abstract class BufferedBytesSource(private val bufferSize: Int) : BytesSource()
+public abstract class BufferedBytesDestination(private val bufferSize: Int) : BytesDestination()

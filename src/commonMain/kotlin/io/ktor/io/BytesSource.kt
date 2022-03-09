@@ -1,10 +1,10 @@
 package io.ktor.io
 
-abstract class BytesSource {
-    abstract val closeCause: Throwable?
+public abstract class BytesSource {
+    public abstract val closeCause: Throwable?
 
-    abstract fun read(): Buffer
-    abstract suspend fun await()
+    public abstract fun read(): Buffer
+    public abstract suspend fun await()
 
-    abstract fun cancel(cause: Throwable = IOException("FooBar"))
+    public abstract fun cancel(cause: Throwable = IOException("FooBar"))
 }

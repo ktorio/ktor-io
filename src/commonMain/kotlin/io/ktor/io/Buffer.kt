@@ -1,19 +1,19 @@
 package io.ktor.io;
 
-abstract class Buffer {
-    abstract var readIndex: Int
-    abstract var writeIndex: Int
-    abstract val capacity: Int
+public abstract class Buffer {
+    public abstract var readIndex: Int
+    public abstract var writeIndex: Int
+    public abstract val capacity: Int
 
-    abstract operator fun get(index: Int): Byte
-    abstract operator fun set(index: Int, value: Byte)
+    public abstract operator fun get(index: Int): Byte
+    public abstract operator fun set(index: Int, value: Byte)
 
-    abstract fun readByte(): Byte
-    abstract fun readShort(): Short
-    abstract fun readInt(): Int
-    abstract fun readLong(): Long
-    abstract fun writeByte(value: Byte)
-    abstract fun writeShort(value: Short)
-    abstract fun writeInt(value: Int)
-    abstract fun writeLong(value: Long)
+    public abstract fun readByte(): Byte
+    public abstract fun readShort(): Short
+    public abstract fun readInt(): Int
+    public abstract fun readLong(): Long
+    public abstract fun writeByte(value: Byte)
+    public abstract fun writeShort(value: Short)
+    public abstract fun writeInt(value: Int)
+    public abstract fun writeLong(value: Long)
 }
