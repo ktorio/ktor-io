@@ -8,6 +8,12 @@ abstract class Buffer {
     abstract operator fun get(index: Int): Byte
     abstract operator fun set(index: Int, value: Byte)
 
-    abstract fun read[Byte, Short, Int, Long](): [Type]
-    abstract fun write[Byte, Short, Int, Long](value: Type)
+    abstract fun readByte(): Byte
+    abstract fun readShort(): Short
+    abstract fun readInt(): Int
+    abstract fun readLong(): Long
+    abstract fun writeByte(value: Byte)
+    abstract fun writeShort(value: Short)
+    abstract fun writeInt(value: Int)
+    abstract fun writeLong(value: Long)
 }

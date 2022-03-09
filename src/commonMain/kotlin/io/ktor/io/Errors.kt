@@ -1,4 +1,4 @@
-package io.ktor.utils.io.errors
+package io.ktor.io
 
 public expect open class IOException(message: String, cause: Throwable?) : Exception {
     public constructor(message: String)
