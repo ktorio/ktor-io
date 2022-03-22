@@ -27,7 +27,7 @@ class BufferedBytesDestinationTest {
     }
 
     @Test
-    fun testAwaitFreeSpaceDoesNotFlushIfBufferIsNotFull() = testSuspend {
+    fun testAwaitFreeSpaceDoesNotWriteIfBufferIsNotFull() = testSuspend {
         val destination = TestBytesDestination()
         val buffered = BufferedBytesDestination(destination, 1024)
 
@@ -41,7 +41,7 @@ class BufferedBytesDestinationTest {
     }
 
     @Test
-    fun testAwaitFreeSpaceFlushesIfBufferIsFull() = testSuspend {
+    fun testAwaitFreeSpaceWritesIfBufferIsFull() = testSuspend {
         val destination = TestBytesDestination()
         val buffered = BufferedBytesDestination(destination, 1024)
 
@@ -97,7 +97,7 @@ class BufferedBytesDestinationTest {
         val buffer1 = destination.buffers[0]
         val buffer2 = destination.buffers[1]
         buffer1.readByte()
-        val value = buffer1.readByte().asHighByte(buffer2.readByte())
+        val value = Short(buffer1.readByte(), buffer2.readByte())
         assertEquals(999, value)
     }
 
@@ -115,7 +115,7 @@ class BufferedBytesDestinationTest {
         val buffer1 = destination.buffers[0]
         val buffer2 = destination.buffers[1]
         buffer1.readByte()
-        val value = buffer1.readShort().asHughShort(buffer2.readShort())
+        val value = Int(buffer1.readShort(), buffer2.readShort())
         assertEquals(999999, value)
     }
 
@@ -133,7 +133,7 @@ class BufferedBytesDestinationTest {
         val buffer1 = destination.buffers[0]
         val buffer2 = destination.buffers[1]
         buffer1.readByte()
-        val value = buffer1.readInt().asHighInt(buffer2.readInt())
+        val value = Long(buffer1.readInt(), buffer2.readInt())
         assertEquals(999999999, value)
     }
 }
@@ -142,9 +142,9 @@ class TestBytesDestination : BytesDestination() {
     internal val buffers = mutableListOf<Buffer>()
     internal val writeCount: Int get() = buffers.size
 
-    override var closeCause: Throwable? = null
+    override var closedCause: Throwable? = null
 
-    override fun canWrite(): Boolean = closeCause != null
+    override fun canWrite(): Boolean = closedCause != null
 
     override fun write(buffer: Buffer) {
         val copy = ByteArrayBuffer(buffer.readCapacity())
@@ -159,7 +159,7 @@ class TestBytesDestination : BytesDestination() {
     override suspend fun awaitFreeSpace() = Unit
 
     override fun close(cause: Throwable?) {
-        closeCause = cause ?: ClosedDestinationException()
+        closedCause = cause ?: ClosedDestinationException()
     }
 
     override fun close() {

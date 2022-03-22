@@ -3,9 +3,37 @@ package io.ktor.io.impl
 import io.ktor.io.*
 import io.ktor.io.utils.*
 
-public class ByteArrayBuffer(public override val capacity: Int) : Buffer() {
+private const val DEFAULT_POOL_CAPACITY: Int = 2000
+public const val DEFAULT_BUFFER_SIZE: Int = 1024 * 16
 
-    private val array = ByteArray(capacity)
+private val NoPool = object : NoPoolImpl<ByteArrayBuffer>() {
+    override fun borrow(): ByteArrayBuffer {
+        throw NotImplementedError()
+    }
+}
+
+public val ByteArrayBuffersPool: ObjectPool<ByteArrayBuffer> = ByteArrayBufferPool()
+
+public class ByteArrayBufferPool(
+    capacity: Int = DEFAULT_POOL_CAPACITY,
+) : DefaultPool<ByteArrayBuffer>(capacity) {
+
+    override fun produceInstance(): ByteArrayBuffer = ByteArrayBuffer(DEFAULT_BUFFER_SIZE, this)
+
+    override fun clearInstance(instance: ByteArrayBuffer): ByteArrayBuffer {
+        instance.reset()
+        return instance
+    }
+}
+
+public class ByteArrayBuffer(
+    public override val capacity: Int,
+    private val pool: ObjectPool<ByteArrayBuffer>
+) : Buffer() {
+
+    public constructor(capacity: Int) : this(capacity, NoPool)
+
+    internal val array = ByteArray(capacity)
 
     override var readIndex: Int = 0
     override var writeIndex: Int = 0
@@ -70,7 +98,30 @@ public class ByteArrayBuffer(public override val capacity: Int) : Buffer() {
         writeIndex += count
     }
 
-    override fun release() {}
+    override fun read(buffer: Buffer) {
+        if (platformRead(this, buffer)) {
+            return
+        }
+        super.read(buffer)
+    }
+
+    override fun write(buffer: Buffer) {
+        if (platformWrite(this, buffer)) {
+            return
+        }
+        super.write(buffer)
+    }
+
+    override fun release() {
+        pool.recycle(this)
+    }
+
+    override fun compact() {
+        if (readIndex == 0) return
+        array.copyInto(array, 0, readIndex, writeIndex)
+        writeIndex = readCapacity()
+        readIndex = 0
+    }
 
     private fun doWriteByte(value: Byte) {
         array[writeIndex++] = value
@@ -91,11 +142,11 @@ public class ByteArrayBuffer(public override val capacity: Int) : Buffer() {
         doWriteInt(value.lowInt)
     }
 
-    private fun doReadShort() = readByte().asHighByte(readByte())
+    private fun doReadShort() = Short(readByte(), readByte())
 
-    private fun doReadInt() = doReadShort().asHughShort(doReadShort())
+    private fun doReadInt() = Int(doReadShort(), doReadShort())
 
-    private fun doReadLong() = doReadInt().asHighInt(doReadInt())
+    private fun doReadLong() = Long(doReadInt(), doReadInt())
 
     private fun checkReadBounds(count: Int) {
         if (readIndex + count > writeIndex) {
@@ -119,3 +170,6 @@ public class ByteArrayBuffer(public override val capacity: Int) : Buffer() {
         }
     }
 }
+
+internal expect fun platformRead(byteArrayBuffer: ByteArrayBuffer, buffer: Buffer): Boolean
+internal expect fun platformWrite(byteArrayBuffer: ByteArrayBuffer, buffer: Buffer): Boolean

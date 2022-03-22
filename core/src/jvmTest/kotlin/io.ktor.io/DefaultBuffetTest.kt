@@ -5,7 +5,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
-class ByteBufferJvmTest {
+class DefaultBuffetTest {
 
     private val noPool = object : NoPoolImpl<ByteBuffer>() {
         override fun borrow(): ByteBuffer {
@@ -15,7 +15,7 @@ class ByteBufferJvmTest {
 
     @Test
     fun testWriteCanRead() {
-        val buffer = ByteBufferJvm(ByteBuffer.allocate(1024).clear(), noPool)
+        val buffer = DefaultBuffer(ByteBuffer.allocate(1024).clear(), noPool)
         buffer.writeIndex = 0
 
         buffer.writeByte(99)

@@ -106,7 +106,7 @@ class BufferedBytesSourceTest {
 
 class TestBytesSource(private vararg val buffers: ByteArrayBuffer) : BytesSource() {
     internal var readCount = 0
-    override val closeCause: Throwable? = null
+    override val closedCause: Throwable? = null
     override fun canRead() = readCount < buffers.size
     override fun read(): Buffer = buffers[readCount++]
     override suspend fun awaitContent() = Unit

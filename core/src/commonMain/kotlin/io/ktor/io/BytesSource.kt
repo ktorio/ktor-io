@@ -1,7 +1,7 @@
 package io.ktor.io
 
 public abstract class BytesSource {
-    public abstract val closeCause: Throwable?
+    public abstract val closedCause: Throwable?
     public abstract fun canRead(): Boolean
 
     public abstract fun read(): Buffer

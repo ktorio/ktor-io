@@ -1,6 +1,8 @@
 package io.ktor.io
 
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.nio.ByteBuffer
 import java.nio.channels.AsynchronousCloseException
 import java.nio.channels.AsynchronousFileChannel
 import java.nio.channels.CompletionHandler
@@ -26,41 +28,30 @@ public class FileBytesSource(private val channel: AsynchronousFileChannel) : Byt
     private var isClosedForRead = false
 
     @Volatile
-    override var closeCause: Throwable? = null
+    override var closedCause: Throwable? = null
         private set
 
     private var buffer: Buffer? = null
 
     override fun canRead(): Boolean {
-        closeCause?.let { throw it }
+        closedCause?.let { throw it }
 
         return !isClosedForRead
     }
 
     override fun read(): Buffer {
+        closedCause?.let { throw it }
+
         return buffer.also { buffer = null } ?: EmptyBuffer
     }
 
     override suspend fun awaitContent() {
-        val buffer = ByteBufferJvmPool.borrow()
+        closedCause?.let { throw it }
+
+        val buffer = BufferPool.borrow()
         val byteBuffer = buffer.buffer
-        val read = suspendCancellableCoroutine<Int> { continuation ->
-            channel.read(byteBuffer, bytesRead, Unit, object : CompletionHandler<Int, Unit> {
-                override fun completed(result: Int, attachment: Unit) {
-                    continuation.resume(result)
-                }
+        val read = channel.read(byteBuffer)
 
-                override fun failed(cause: Throwable, attachment: Unit) {
-                    if (cause is AsynchronousCloseException) {
-                        continuation.resumeWithException(closeCause!!)
-                        return
-                    }
-
-                    cancel(cause)
-                    continuation.resumeWithException(cause)
-                }
-            })
-        }
         bytesRead += read
         isClosedForRead = read == -1
         byteBuffer.flip()
@@ -68,7 +59,34 @@ public class FileBytesSource(private val channel: AsynchronousFileChannel) : Byt
     }
 
     override fun cancel(cause: Throwable) {
-        closeCause = cause
+        if (closedCause != null) return
+        closedCause = cause
         channel.close()
+    }
+
+    private lateinit var readCompletionContinuation: CancellableContinuation<Int>
+
+    private val readCompletionHandler = object : CompletionHandler<Int, Unit> {
+        override fun completed(result: Int, attachment: Unit) {
+            readCompletionContinuation.resume(result)
+        }
+
+        override fun failed(cause: Throwable, attachment: Unit) {
+            if (cause is AsynchronousCloseException) {
+                check(closedCause != null)
+                readCompletionContinuation.resumeWithException(closedCause!!)
+                return
+            }
+
+            cancel(cause)
+            readCompletionContinuation.resumeWithException(cause)
+        }
+    }
+
+    private suspend fun AsynchronousFileChannel.read(
+        byteBuffer: ByteBuffer
+    ) = suspendCancellableCoroutine<Int> { continuation ->
+        readCompletionContinuation = continuation
+        read(byteBuffer, bytesRead, Unit, readCompletionHandler)
     }
 }

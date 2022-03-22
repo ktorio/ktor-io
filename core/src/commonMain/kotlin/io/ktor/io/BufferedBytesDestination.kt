@@ -2,45 +2,57 @@ package io.ktor.io
 
 import io.ktor.io.impl.*
 import io.ktor.io.utils.*
-import kotlin.math.min
 
 public class BufferedBytesDestination(
-    private val delegate: BytesDestination, bufferSize: Int = 8 * 1024
+    private val delegate: BytesDestination,
+    bufferSize: Int = DEFAULT_BUFFER_SIZE
 ) : BytesDestination() {
 
-    private val buffer = ByteArrayBuffer(bufferSize)
+    private val buffer: Buffer
 
-    override val closeCause: Throwable?
-        get() = delegate.closeCause
+    init {
+        buffer = if (bufferSize == DEFAULT_BUFFER_SIZE) {
+            ByteArrayBuffersPool.borrow()
+        } else {
+            ByteArrayBuffer(bufferSize)
+        }
+    }
+
+    override val closedCause: Throwable?
+        get() = delegate.closedCause
 
     override fun canWrite(): Boolean = delegate.canWrite()
 
     override fun write(buffer: Buffer) {
-        val read = min(this.buffer.writeCapacity(), buffer.readCapacity())
-        repeat(read) {
-            this.buffer.writeByte(buffer.readByte())
-        }
+        closedCause?.let { throw it }
+
+        this.buffer.write(buffer)
     }
 
     override suspend fun flush() {
+        closedCause?.let { throw it }
+
         while (buffer.canRead()) {
             delegate.write(buffer)
             delegate.awaitFreeSpace()
         }
-        buffer.readIndex = 0
-        buffer.writeIndex = 0
+
+        buffer.reset()
         delegate.flush()
     }
 
     override suspend fun awaitFreeSpace() {
-        if (buffer.canWrite()) {
-            return
+        closedCause?.let { throw it }
+
+        while (!buffer.canWrite()) {
+            delegate.awaitFreeSpace()
+            delegate.write(buffer)
+            buffer.compact()
         }
-        flush()
-        delegate.awaitFreeSpace()
     }
 
     override fun close(cause: Throwable?) {
+        buffer.release()
         delegate.close(cause)
     }
 
@@ -49,45 +61,55 @@ public class BufferedBytesDestination(
     }
 
     public suspend fun writeByte(value: Byte) {
-        if (!buffer.canWrite()) awaitFreeSpace()
-        buffer.writeByte(value)
+        closedCause?.let { throw it }
+
+        if (buffer.canWrite()) {
+            buffer.writeByte(value)
+        } else {
+            awaitFreeSpace()
+            buffer.writeByte(value)
+        }
+
         flushIfFull()
     }
 
     public suspend fun writeShort(value: Short) {
-        awaitFreeSpace()
+        closedCause?.let { throw it }
+
         if (buffer.writeCapacity() >= 2) {
             buffer.writeShort(value)
-            flushIfFull()
-            return
+        } else {
+            writeByte(value.highByte)
+            writeByte(value.lowByte)
         }
 
-        writeByte(value.highByte)
-        writeByte(value.lowByte)
+        flushIfFull()
     }
 
     public suspend fun writeInt(value: Int) {
-        awaitFreeSpace()
+        closedCause?.let { throw it }
+
         if (buffer.writeCapacity() >= 4) {
             buffer.writeInt(value)
-            flushIfFull()
-            return
+        } else {
+            writeShort(value.highShort)
+            writeShort(value.lowShort)
         }
 
-        writeShort(value.highShort)
-        writeShort(value.lowShort)
+        flushIfFull()
     }
 
     public suspend fun writeLong(value: Long) {
-        awaitFreeSpace()
+        closedCause?.let { throw it }
+
         if (buffer.writeCapacity() >= 8) {
             buffer.writeLong(value)
-            flushIfFull()
-            return
+        } else {
+            writeInt(value.highInt)
+            writeInt(value.lowInt)
         }
 
-        writeInt(value.highInt)
-        writeInt(value.lowInt)
+        flushIfFull()
     }
 
     private suspend fun flushIfFull() {

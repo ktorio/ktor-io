@@ -6,31 +6,36 @@ public class BufferedBytesSource(
     private val delegate: BytesSource
 ) : BytesSource() {
 
-    private lateinit var buffer: Buffer
+    private var buffer: Buffer
 
-    override val closeCause: Throwable?
-        get() = delegate.closeCause
+    init {
+        buffer = delegate.read()
+    }
+
+    override val closedCause: Throwable?
+        get() = delegate.closedCause
 
     override fun canRead(): Boolean {
-        return (::buffer.isInitialized && buffer.canRead()) || delegate.canRead()
+        return delegate.canRead() || buffer.canRead()
     }
 
     override fun read(): Buffer {
-        if (::buffer.isInitialized && buffer.canRead()) {
+        closedCause?.let { throw it }
+
+        if (buffer.canRead()) {
             return buffer
         }
 
-        if (::buffer.isInitialized) {
-            buffer.release()
-        }
+        buffer.release()
         buffer = delegate.read()
         return buffer
     }
 
     override suspend fun awaitContent() {
-        if (::buffer.isInitialized && buffer.canRead()) {
-            return
-        }
+        closedCause?.let { throw it }
+
+        if (buffer.canRead()) return
+
         delegate.awaitContent()
     }
 
@@ -39,7 +44,9 @@ public class BufferedBytesSource(
     }
 
     public suspend fun readByte(): Byte {
-        while (!::buffer.isInitialized || !buffer.canRead()) {
+        closedCause?.let { throw it }
+
+        while (!buffer.canRead()) {
             awaitContent()
             read()
         }
@@ -47,23 +54,29 @@ public class BufferedBytesSource(
     }
 
     public suspend fun readShort(): Short {
-        if (::buffer.isInitialized && buffer.readCapacity() >= 2) {
+        closedCause?.let { throw it }
+
+        if (buffer.readCapacity() >= 2) {
             return buffer.readShort()
         }
-        return readByte().asHighByte(readByte())
+        return Short(readByte(), readByte())
     }
 
     public suspend fun readInt(): Int {
-        if (::buffer.isInitialized && buffer.readCapacity() >= 4) {
+        closedCause?.let { throw it }
+
+        if (buffer.readCapacity() >= 4) {
             return buffer.readInt()
         }
-        return readShort().asHughShort(readShort())
+        return Int(readShort(), readShort())
     }
 
     public suspend fun readLong(): Long {
-        if (::buffer.isInitialized && buffer.readCapacity() >= 8) {
+        closedCause?.let { throw it }
+
+        if (buffer.readCapacity() >= 8) {
             return buffer.readLong()
         }
-        return readInt().asHighInt(readInt())
+        return Long(readInt(), readInt())
     }
 }

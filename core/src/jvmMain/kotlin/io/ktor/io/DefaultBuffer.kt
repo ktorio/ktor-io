@@ -4,9 +4,9 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 private const val DEFAULT_POOL_CAPACITY: Int = 2000
-private const val DEFAULT_BUFFER_SIZE: Int = 1024 * 8
+private const val DEFAULT_BUFFER_SIZE: Int = 1024 * 16
 
-public val DefaultByteBufferPool: ObjectPool<ByteBuffer> = DirectByteBufferPool()
+public val DefaultDirectByteBufferPool: ObjectPool<ByteBuffer> = DirectByteBufferPool()
 
 public class DirectByteBufferPool(
     capacity: Int = DEFAULT_POOL_CAPACITY,
@@ -26,16 +26,17 @@ public class DirectByteBufferPool(
     }
 }
 
-public val ByteBufferJvmPool: ObjectPool<ByteBufferJvm> = ByteBufferJvmPoolPool()
+public val BufferPool: ObjectPool<DefaultBuffer> = DefaultBufferPool()
 
-public class ByteBufferJvmPoolPool(
+public class DefaultBufferPool(
     capacity: Int = DEFAULT_POOL_CAPACITY,
-) : DefaultPool<ByteBufferJvm>(capacity) {
+) : DefaultPool<DefaultBuffer>(capacity) {
 
-    override fun produceInstance(): ByteBufferJvm = ByteBufferJvm(DefaultByteBufferPool.borrow(), DefaultByteBufferPool)
+    override fun produceInstance(): DefaultBuffer =
+        DefaultBuffer(DefaultDirectByteBufferPool.borrow(), DefaultDirectByteBufferPool)
 }
 
-public class ByteBufferJvm(internal val buffer: ByteBuffer, private val pool: ObjectPool<ByteBuffer>) : Buffer() {
+public class DefaultBuffer(internal val buffer: ByteBuffer, private val pool: ObjectPool<ByteBuffer>) : Buffer() {
 
     override var readIndex: Int
         get() = buffer.position()
@@ -118,7 +119,27 @@ public class ByteBufferJvm(internal val buffer: ByteBuffer, private val pool: Ob
         writeIndex = oldLimit + count
     }
 
+    override fun read(buffer: Buffer) {
+        if (buffer is DefaultBuffer) {
+            buffer.buffer.put(this.buffer)
+            return
+        }
+        super.read(buffer)
+    }
+
+    override fun write(buffer: Buffer) {
+        if (buffer is DefaultBuffer) {
+            this.buffer.put(buffer.buffer)
+            return
+        }
+        super.write(buffer)
+    }
+
     override fun release() {
         pool.recycle(buffer)
+    }
+
+    override fun compact() {
+        buffer.compact()
     }
 }
