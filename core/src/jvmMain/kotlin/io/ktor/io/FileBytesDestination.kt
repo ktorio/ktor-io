@@ -1,6 +1,5 @@
 package io.ktor.io
 
-import io.ktor.io.impl.*
 import java.lang.Integer.min
 import java.nio.channels.ClosedChannelException
 import java.nio.channels.FileChannel

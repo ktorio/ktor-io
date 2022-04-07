@@ -1,6 +1,5 @@
 package io.ktor.io
 
-import io.ktor.io.impl.*
 import io.ktor.io.utils.*
 import kotlin.test.*
 

@@ -1,4 +1,4 @@
-package io.ktor.io.impl
+package io.ktor.io
 
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -154,7 +154,9 @@ class ByteArrayBufferTest {
         val buffer = ByteArrayBuffer(1024)
 
         val array = ByteArray(123)
-        assertFailsWith<IndexOutOfBoundsException> { buffer.read(array) }
+        var count = buffer.read(array)
+        assertEquals(0, count)
+
         buffer.writeIndex = buffer.capacity - 123
         buffer.readIndex = buffer.writeIndex
         buffer.write(array)
@@ -162,6 +164,7 @@ class ByteArrayBufferTest {
         val newArray = ByteArray(123)
         assertContentEquals(array, newArray)
         buffer.writeIndex = buffer.capacity - 122
-        assertFailsWith<IndexOutOfBoundsException> { buffer.write(array) }
+        count = buffer.write(array)
+        assertEquals(122, count)
     }
 }

@@ -1,30 +1,7 @@
 package io.ktor.io
 
+import java.lang.Integer.min
 import java.nio.ByteBuffer
-import java.nio.ByteOrder
-
-private const val DEFAULT_POOL_CAPACITY: Int = 2000
-private const val DEFAULT_BUFFER_SIZE: Int = 1024 * 16
-
-public val DefaultDirectByteBufferPool: ObjectPool<ByteBuffer> = DirectByteBufferPool()
-
-public class DirectByteBufferPool(
-    capacity: Int = DEFAULT_POOL_CAPACITY,
-    private val bufferSize: Int = DEFAULT_BUFFER_SIZE
-) : DefaultPool<ByteBuffer>(capacity) {
-
-    override fun produceInstance(): ByteBuffer = ByteBuffer.allocateDirect(bufferSize)!!
-
-    override fun clearInstance(instance: ByteBuffer): ByteBuffer = instance.apply {
-        clear()
-        order(ByteOrder.BIG_ENDIAN)
-    }
-
-    override fun validateInstance(instance: ByteBuffer) {
-        check(instance.capacity() == bufferSize)
-        check(instance.isDirect)
-    }
-}
 
 public val BufferPool: ObjectPool<DefaultBuffer> = DefaultBufferPool()
 
@@ -105,34 +82,55 @@ public class DefaultBuffer(internal val buffer: ByteBuffer, private val pool: Ob
         writeIndex = oldLimit + 8
     }
 
-    override fun read(array: ByteArray, offset: Int, count: Int) {
-        buffer.get(array, offset, count)
+    override fun read(destination: ByteArray, startIndex: Int, endIndex: Int): Int {
+        require(startIndex >= 0) { "startIndex should be non-negative: $startIndex" }
+        require(startIndex <= endIndex) { "startIndex should be less than or equal to endIndex: $startIndex, $endIndex" }
+        require(endIndex <= destination.size) { "endIndex should be less than or equal to destination.size: $endIndex, ${destination.size}" }
+
+        val count = min(endIndex - startIndex, buffer.remaining())
+        buffer.get(destination, startIndex, count)
+        return count
     }
 
-    override fun write(array: ByteArray, offset: Int, count: Int) {
-        val oldPosition = buffer.position()
-        val oldLimit = buffer.limit()
-        buffer.position(oldLimit)
-        buffer.limit(capacity)
-        buffer.put(array, offset, count)
-        readIndex = oldPosition
-        writeIndex = oldLimit + count
+    override fun write(source: ByteArray, startIndex: Int, endIndex: Int): Int {
+        require(startIndex >= 0) { "startIndex should be non-negative: $startIndex" }
+        require(startIndex <= endIndex) { "startIndex should be less than or equal to endIndex: $startIndex, $endIndex" }
+        require(endIndex <= source.size) { "endIndex should be less than or equal to source.size: $endIndex, ${source.size}" }
+
+        val count = min(endIndex - startIndex, capacity - writeIndex)
+
+        val storedReadIndex = readIndex
+        val storedWriteIndex = writeIndex
+
+        buffer.position(buffer.limit())
+        buffer.limit(buffer.capacity())
+        buffer.put(source, startIndex, count)
+
+        readIndex = storedReadIndex
+        writeIndex = storedWriteIndex + count
+        return count
     }
 
-    override fun read(buffer: Buffer) {
-        if (buffer is DefaultBuffer) {
-            buffer.buffer.put(this.buffer)
+    override fun read(destination: Buffer) {
+        if (destination is DefaultBuffer) {
+            destination.buffer.put(this.buffer)
             return
         }
-        super.read(buffer)
+
+        while (canRead() && destination.canWrite()) {
+            destination.writeByte(readByte())
+        }
     }
 
-    override fun write(buffer: Buffer) {
-        if (buffer is DefaultBuffer) {
-            this.buffer.put(buffer.buffer)
+    override fun write(source: Buffer) {
+        if (source is DefaultBuffer) {
+            this.buffer.put(source.buffer)
             return
         }
-        super.write(buffer)
+
+        while (canWrite() && source.canRead()) {
+            writeByte(source.readByte())
+        }
     }
 
     override fun release() {

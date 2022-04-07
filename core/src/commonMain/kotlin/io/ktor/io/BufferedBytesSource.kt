@@ -1,7 +1,5 @@
 package io.ktor.io
 
-import io.ktor.io.utils.*
-
 public class BufferedBytesSource(
     private val delegate: BytesSource
 ) : BytesSource() {
