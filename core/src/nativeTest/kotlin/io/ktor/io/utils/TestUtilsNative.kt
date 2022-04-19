@@ -1,4 +1,4 @@
-package io.ktor.io
+package io.ktor.io.utils
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
@@ -10,7 +10,7 @@ import kotlin.native.concurrent.Worker
 import kotlin.system.getTimeMillis
 import kotlin.time.Duration.Companion.milliseconds
 
-public actual fun testSuspend(
+actual fun testSuspend(
     context: CoroutineContext,
     timeoutMillis: Long,
     block: suspend CoroutineScope.() -> Unit

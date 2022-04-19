@@ -1,4 +1,4 @@
-package io.ktor.io.impl
+package io.ktor.io.internal
 
 import io.ktor.io.*
 

@@ -1,8 +1,5 @@
 package io.ktor.io
 
-import io.ktor.io.impl.*
-import io.ktor.io.utils.*
-
 public class BufferedBytesDestination(
     private val delegate: BytesDestination,
     bufferSize: Int = DEFAULT_BUFFER_SIZE
@@ -12,7 +9,7 @@ public class BufferedBytesDestination(
 
     init {
         buffer = if (bufferSize == DEFAULT_BUFFER_SIZE) {
-            ByteArrayBuffersPool.borrow()
+            ByteArrayBufferPool.Default.borrow()
         } else {
             ByteArrayBuffer(bufferSize)
         }

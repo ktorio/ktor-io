@@ -1,10 +1,10 @@
-package io.ktor.io
+package io.ktor.io.utils
 
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
 
 @OptIn(DelicateCoroutinesApi::class)
-public actual fun testSuspend(
+actual fun testSuspend(
     context: CoroutineContext,
     timeoutMillis: Long,
     block: suspend CoroutineScope.() -> Unit

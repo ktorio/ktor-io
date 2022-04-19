@@ -42,7 +42,7 @@ public class FileBytesSource(private val channel: AsynchronousFileChannel) : Byt
     override fun read(): Buffer {
         closedCause?.let { throw it }
 
-        return buffer.also { buffer = null } ?: EmptyBuffer
+        return buffer.also { buffer = null } ?: Buffer.Empty
     }
 
     override suspend fun awaitContent() {

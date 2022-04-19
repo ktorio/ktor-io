@@ -1,6 +1,5 @@
 package io.ktor.io
 
-import io.ktor.io.impl.*
 import io.ktor.io.utils.*
 import kotlin.test.*
 
@@ -102,13 +101,16 @@ class BufferedBytesSourceTest {
         assertEquals(999, buffered.readLong())
         assertEquals(2, source.readCount)
     }
-}
 
-class TestBytesSource(private vararg val buffers: ByteArrayBuffer) : BytesSource() {
-    internal var readCount = 0
-    override val closedCause: Throwable? = null
-    override fun canRead() = readCount < buffers.size
-    override fun read(): Buffer = buffers[readCount++]
-    override suspend fun awaitContent() = Unit
-    override fun cancel(cause: Throwable) = Unit
+    @Test
+    fun testReadLongAtOnce() = testSuspend {
+        val buffer = ByteArrayBuffer(8)
+        buffer.writeInt(Int.MAX_VALUE)
+        buffer.writeInt(Int.MAX_VALUE)
+
+        val source = TestBytesSource(buffer)
+        val buffered = BufferedBytesSource(source)
+
+        assertEquals(9223372034707292159, buffered.readLong())
+    }
 }

@@ -1,8 +1,5 @@
 package io.ktor.io
 
-import kotlinx.atomicfu.atomic
-import kotlinx.atomicfu.update
-
 public interface ObjectPool<T : Any> : Closeable {
     /**
      * Pool capacity
@@ -31,117 +28,6 @@ public interface ObjectPool<T : Any> : Closeable {
     override fun close() {
         dispose()
     }
-}
-
-/**
- * A pool implementation of zero capacity that always creates new instances
- */
-public abstract class NoPoolImpl<T : Any> : ObjectPool<T> {
-    override val capacity: Int
-        get() = 0
-
-    override fun recycle(instance: T) {
-    }
-
-    override fun dispose() {
-    }
-}
-
-/**
- * A pool that produces at most one instance
- */
-public abstract class SingleInstancePool<T : Any> : ObjectPool<T> {
-    private val borrowed = atomic(0)
-    private val disposed = atomic(false)
-
-    private val instance = atomic<T?>(null)
-
-    /**
-     * Creates a new instance of [T]
-     */
-    protected abstract fun produceInstance(): T
-
-    /**
-     * Dispose [instance] and release its resources
-     */
-    protected abstract fun disposeInstance(instance: T)
-
-    final override val capacity: Int get() = 1
-
-    final override fun borrow(): T {
-        borrowed.update {
-            if (it != 0) throw IllegalStateException("Instance is already consumed")
-            1
-        }
-
-        val instance = produceInstance()
-        this.instance.value = instance
-
-        return instance
-    }
-
-    final override fun recycle(instance: T) {
-        if (this.instance.value !== instance) {
-            if (this.instance.value == null && borrowed.value != 0) {
-                throw IllegalStateException("Already recycled or an irrelevant instance tried to be recycled")
-            }
-
-            throw IllegalStateException("Unable to recycle irrelevant instance")
-        }
-
-        this.instance.value = null
-
-        if (!disposed.compareAndSet(false, true)) {
-            throw IllegalStateException("An instance is already disposed")
-        }
-
-        disposeInstance(instance)
-    }
-
-    final override fun dispose() {
-        if (disposed.compareAndSet(false, true)) {
-            val value = instance.value ?: return
-            instance.value = null
-
-            disposeInstance(value)
-        }
-    }
-}
-
-/**
- * Default object pool implementation.
- */
-public expect abstract class DefaultPool<T : Any>(capacity: Int) : ObjectPool<T> {
-    /**
-     * Pool capacity.
-     */
-    final override val capacity: Int
-
-    /**
-     * Creates a new instance of [T]
-     */
-    protected abstract fun produceInstance(): T
-
-    /**
-     * Dispose [instance] and release its resources
-     */
-    protected open fun disposeInstance(instance: T)
-
-    /**
-     * Clear [instance]'s state before reuse: reset pointers, counters and so on
-     */
-    protected open fun clearInstance(instance: T): T
-
-    /**
-     * Validate [instance] of [T]. Could verify that the object has been borrowed from this pool
-     */
-    protected open fun validateInstance(instance: T)
-
-    final override fun borrow(): T
-
-    final override fun recycle(instance: T)
-
-    final override fun dispose()
 }
 
 /**
