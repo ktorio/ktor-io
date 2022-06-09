@@ -80,7 +80,7 @@ fun copyAndLog(
     from: Buffer,
     fromOffset: Int,
     readLength: Int,
-    to: Destination,
+    to: Buffer,
     toWriteOffset: Int
 ): Int {
     for (index in 0 until readLength) {
@@ -102,7 +102,7 @@ fun copyAndLog(
     from: Buffer,
     fromStartIndex: Int,
     fromEndIndex: Int,
-    to: Destination,
+    to: Buffer,
     toStartIndex: Int
 ): Int {
     for (index in 0 until (fromEndIndex - fromStartIndex)) {
