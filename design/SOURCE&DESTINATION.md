@@ -97,7 +97,7 @@ val message = socketSource.use {
 }
 ```
 
-If the `Source` is cancelled with an exception, it will be stored to the `closeCause` property.
+If the `Source` is cancelled with an exception, it will be stored to the `cancelCause` property.
 
 ```kotlin
 abstract class Source {
@@ -129,16 +129,42 @@ destination. It modifies `buffer.readPosition` and returns amount of written byt
 While the `Source` is responsible for creating `Buffer`, `Destination` is responsible for releasing it. If the `buffer`
 has no bytes available after write, it will be automatically released.
 
+### Flush
+
+It's hard to write human-readable justification of having flush method without introducing a new abstractions, so I will
+keep it as TODO("Rewrite this").
+
+If you have chained transformations on the `Destination` like:
+
+```kotlin
+val destination = mySocket.destination
+    .buffered()
+    .compressed()
+```
+
+and a single `message`. There is a common pattern when you want to send this message and make sure that all data is
+actually written to file or socket(for instance it can be a http message header). Some transformations could keep an
+internal buffer because of efficiency reasons.
+
+To make sure that all data is written to the destination, you can call `flush()`. The `flush()` call suspends until all
+data is actually written to the final destination:
+
+```kotlin
+destination.writeFully(message)
+destination.flush()
+// At this point message should be compressed and written to the socket.
+```
+
+## Writing Full Buffer
+
 How could you write a whole `Buffer` to the `Destination`? The spin on the `write` method is not a good idea, so there
 is a method `awaitFreeSpace()` that suspends until the destination has some free space to write:
 
 ```kotlin
 suspend fun Destination.writeBuffer(buffer: Buffer) {
-    while (true) {
-        write(buffer)
-
-        if (buffer.isEmpty()) return
+    while (!buffer.isEmpty()) {
         awaitFreeSpace()
+        write(buffer)
     }
 }
 ```
@@ -157,39 +183,12 @@ suspend fun Destination.writeTrailer(trailer: ByteArray) {
 ```
 
 You can pass close cause as exception to the close method. It will be stored to the `closedCause` and available for
-tracing. There is also `isClosed` flag to check if the destination is already closed.
-
-### Flush
-
-It's hard to write human-readable justification of having flush method without introducing a new abstractions, so I will
-keep it as TODO("Rewrite this").
-
-If you have chained transformations on the `Destination` like:
-
-```kotlin
-val destination = mySocket.destination
-    .compressed()
-    .buffered()
-```
-
-and a single `message`. There is a common pattern when you want to send this message and make sure that all data is
-actually written to file or socket(for instance it can be a http message header). Some transformations could keep an
-internal buffer because of efficiency reasons.
-
-To make sure that all data is written to the destination, you can call `flush()`. The `flush()` call suspends until all
-data is actually written to the final destination:
-
-```kotlin
-destination.writeFully(message)
-destination.flush()
-// At this point message should be compressed and written to the socket.
-```
+tracing.
 
 ## Final Listing
 
 ```kotlin
 abstract class Destination {
-    abstract val isClosed: Boolean
     abstract val closeCause: Throwable?
 
     abstract fun write(buffer: Buffer): Int
