@@ -5,9 +5,9 @@ import io.ktor.io.*
 internal actual fun platformRead(
     byteArrayBuffer: ByteArrayBuffer,
     buffer: Buffer
-): Boolean = false
+): Int = Int.MIN_VALUE
 
 internal actual fun platformWrite(
     byteArrayBuffer: ByteArrayBuffer,
     buffer: Buffer
-): Boolean = false
+): Int = Int.MIN_VALUE

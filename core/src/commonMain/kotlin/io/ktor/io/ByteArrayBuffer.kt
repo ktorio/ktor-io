@@ -86,36 +86,44 @@ public class ByteArrayBuffer(
         return count
     }
 
-    override fun read(destination: Buffer) {
-        if (platformRead(this, destination)) {
-            return
+    override fun read(destination: Buffer): Int {
+        val count = platformRead(this, destination)
+        if (count != Int.MIN_VALUE) {
+            return count
         }
 
         if (destination is ByteArrayBuffer) {
-            val count = read(destination.array, destination.writeIndex, destination.capacity)
-            destination.writeIndex += count
-            return
+            val result = read(destination.array, destination.writeIndex, destination.capacity)
+            destination.writeIndex += result
+            return result
         }
 
+        var result = 0
         while (destination.canWrite() && canRead()) {
             destination.writeByte(readByte())
+            result++
         }
+
+        return result
     }
 
-    override fun write(source: Buffer) {
-        if (platformWrite(this, source)) {
-            return
-        }
+    override fun write(source: Buffer): Int {
+        val count = platformWrite(this, source)
+        if (count > 0) return count
 
         if (source is ByteArrayBuffer) {
-            val count = write(source.array, source.readIndex, source.writeIndex)
-            source.readIndex += count
-            return
+            val result = write(source.array, source.readIndex, source.writeIndex)
+            source.readIndex += result
+            return result
         }
 
+        var result = 0
         while (source.canRead() && canWrite()) {
             writeByte(source.readByte())
+            result++
         }
+
+        return result
     }
 
     override fun release() {

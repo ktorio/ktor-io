@@ -1,9 +1,9 @@
 package io.ktor.io
 
-public class BufferedBytesDestination(
-    private val delegate: BytesDestination,
+public class BufferedDestination(
+    private val delegate: Destination,
     bufferSize: Int = DEFAULT_BUFFER_SIZE
-) : BytesDestination() {
+) : Destination() {
 
     private val buffer: Buffer
 
@@ -18,12 +18,10 @@ public class BufferedBytesDestination(
     override val closedCause: Throwable?
         get() = delegate.closedCause
 
-    override fun canWrite(): Boolean = delegate.canWrite()
-
-    override fun write(buffer: Buffer) {
+    override fun write(data: Buffer): Int {
         closedCause?.let { throw it }
 
-        this.buffer.write(buffer)
+        return buffer.write(data)
     }
 
     override suspend fun flush() {

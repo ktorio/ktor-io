@@ -15,21 +15,23 @@ class FilesTest {
     fun testCopyingFile(): Unit = runBlocking {
         val content = buildString { repeat(100000) { append("testString$it") } }
 
-        val originalFile = Files.createFile(Path.of("original"))
+        val originalFile = Files.createTempFile("test", "origin")
         originalFile.writeText(content)
-        val fileCopy = Path.of("copy")
+        val fileCopy = Files.createTempFile("test", "copy")
 
         val source = FileBytesSource(originalFile)
         val destination = FileBytesDestination(fileCopy)
 
-        while (source.canRead()) {
+        while (source.awaitContent()) {
             val buffer = source.read()
-            destination.write(buffer)
-            destination.awaitFreeSpace()
-            source.awaitContent()
+
+            while (buffer.canRead()) {
+                destination.awaitFreeSpace()
+                destination.write(buffer)
+            }
         }
+
         destination.flush()
-        source.cancel()
         destination.close()
 
         val copiedContent = fileCopy.readText()
@@ -44,21 +46,24 @@ class FilesTest {
     fun testCopyingFileBuffered(): Unit = runBlocking {
         val content = buildString { repeat(100000) { append("testString$it") } }
 
-        val originalFile = Files.createFile(Path.of("original"))
+        val originalFile = Files.createTempFile("file", "origin")
         originalFile.writeText(content)
-        val fileCopy = Path.of("copy")
 
-        val source = BufferedBytesSource(FileBytesSource(originalFile))
-        val destination = BufferedBytesDestination(FileBytesDestination(fileCopy), 12 * 1024)
+        val fileCopy = Files.createTempFile("file", "copy")
 
-        while (source.canRead()) {
+        val source = BufferedSource(FileBytesSource(originalFile))
+        val destination = BufferedDestination(FileBytesDestination(fileCopy), 12 * 1024)
+
+        while (source.awaitContent()) {
             val buffer = source.read()
-            destination.write(buffer)
-            destination.awaitFreeSpace()
-            source.awaitContent()
+
+            while (buffer.canRead()) {
+                destination.awaitFreeSpace()
+                destination.write(buffer)
+            }
         }
+
         destination.flush()
-        source.cancel()
         destination.close()
 
         val copiedContent = fileCopy.readText()

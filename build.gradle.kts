@@ -28,7 +28,8 @@ plugins {
 }
 
 allprojects {
-    group = "io.ktor"
+    group = "io.ktor.io"
+    apply(plugin="maven-publish")
 
     repositories {
         mavenLocal()
@@ -89,4 +90,13 @@ allprojects {
             val nativeTest by getting
         }
     }
+
+    the<PublishingExtension>().apply {
+        publications {
+            create<MavenPublication>(project.name) {
+                from(components["kotlin"])
+            }
+        }
+    }
 }
+

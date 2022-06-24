@@ -12,36 +12,31 @@ public fun FileBytesDestination(
     file: Path,
     options: Set<OpenOption> = setOf(StandardOpenOption.CREATE, StandardOpenOption.WRITE),
     vararg attrs: FileAttribute<Any>
-): FileBytesDestination = FileBytesDestination(FileChannel.open(file, options, *attrs))
+): FileDestination = FileDestination(FileChannel.open(file, options, *attrs))
 
-public class FileBytesDestination(private val channel: FileChannel) : BytesDestination() {
+public class FileDestination(private val channel: FileChannel) : Destination() {
 
     @Volatile
     override var closedCause: Throwable? = null
         private set
 
-    override fun canWrite(): Boolean {
-        if (closedCause is ClosedChannelException) return false
-        closedCause?.let { throw it }
-        return true
-    }
-
-    override fun write(buffer: Buffer) {
+    override fun write(data: Buffer): Int {
         closedCause?.let { throw it }
 
         try {
-            if (buffer is DefaultBuffer) {
-                channel.write(buffer.buffer)
-                return
+            if (data is DefaultBuffer) {
+                val origin = data.buffer
+                return channel.write(origin)
             }
-            slowWrite(buffer)
+
+            return slowWrite(data)
         } catch (cause: Throwable) {
             close(cause)
             throw cause
         }
     }
 
-    private fun slowWrite(buffer: Buffer) {
+    private fun slowWrite(buffer: Buffer): Int {
         DefaultDirectByteBufferPool.useInstance { byteBuffer ->
             val toWrite = min(buffer.readCapacity(), byteBuffer.remaining())
             if (buffer is ByteArrayBuffer) {
@@ -53,7 +48,8 @@ public class FileBytesDestination(private val channel: FileChannel) : BytesDesti
                 }
             }
             byteBuffer.flip()
-            channel.write(byteBuffer)
+
+            return channel.write(byteBuffer)
         }
     }
 

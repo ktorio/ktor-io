@@ -1,8 +1,8 @@
 package io.ktor.io
 
-public class BufferedBytesSource(
-    private val delegate: BytesSource
-) : BytesSource() {
+public class BufferedSource(
+    private val delegate: Source
+) : Source() {
 
     private var buffer: Buffer
 
@@ -12,10 +12,6 @@ public class BufferedBytesSource(
 
     override val closedCause: Throwable?
         get() = delegate.closedCause
-
-    override fun canRead(): Boolean {
-        return delegate.canRead() || buffer.canRead()
-    }
 
     override fun read(): Buffer {
         closedCause?.let { throw it }
@@ -29,12 +25,11 @@ public class BufferedBytesSource(
         return buffer
     }
 
-    override suspend fun awaitContent() {
+    override suspend fun awaitContent(): Boolean {
         closedCause?.let { throw it }
 
-        if (buffer.canRead()) return
-
-        delegate.awaitContent()
+        if (buffer.canRead()) return true
+        return delegate.awaitContent()
     }
 
     override fun cancel(cause: Throwable) {

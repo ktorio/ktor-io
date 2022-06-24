@@ -17,9 +17,9 @@ public fun FileBytesSource(
     file: Path,
     options: Set<OpenOption> = setOf(StandardOpenOption.READ),
     executor: ExecutorService? = null
-): FileBytesSource = FileBytesSource(AsynchronousFileChannel.open(file, options, executor))
+): FileSource = FileSource(AsynchronousFileChannel.open(file, options, executor))
 
-public class FileBytesSource(private val channel: AsynchronousFileChannel) : BytesSource() {
+public class FileSource(private val channel: AsynchronousFileChannel) : Source() {
 
     @Volatile
     private var bytesRead = 0L
@@ -33,29 +33,24 @@ public class FileBytesSource(private val channel: AsynchronousFileChannel) : Byt
 
     private var buffer: Buffer? = null
 
-    override fun canRead(): Boolean {
-        closedCause?.let { throw it }
-
-        return !isClosedForRead
-    }
-
     override fun read(): Buffer {
         closedCause?.let { throw it }
 
         return buffer.also { buffer = null } ?: Buffer.Empty
     }
 
-    override suspend fun awaitContent() {
+    override suspend fun awaitContent(): Boolean {
         closedCause?.let { throw it }
 
         val buffer = BufferPool.borrow()
         val byteBuffer = buffer.buffer
-        val read = channel.read(byteBuffer)
+        val count = channel.read(byteBuffer)
 
-        bytesRead += read
-        isClosedForRead = read == -1
+        bytesRead += count
+        isClosedForRead = count == -1
         byteBuffer.flip()
         this.buffer = buffer
+        return count >= 0
     }
 
     override fun cancel(cause: Throwable) {

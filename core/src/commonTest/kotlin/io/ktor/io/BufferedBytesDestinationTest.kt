@@ -8,8 +8,8 @@ class BufferedBytesDestinationTest {
 
     @Test
     fun testWriteDoesNotFlush() {
-        val destination = TestBytesDestination()
-        val buffered = BufferedBytesDestination(destination, 1024)
+        val destination = TestDestination()
+        val buffered = BufferedDestination(destination, 1024)
 
         val buffer1 = ByteArrayBuffer(512)
         buffer1.write(ByteArray(512) { it.toByte() })
@@ -27,8 +27,8 @@ class BufferedBytesDestinationTest {
 
     @Test
     fun testAwaitFreeSpaceDoesNotWriteIfBufferIsNotFull() = testSuspend {
-        val destination = TestBytesDestination()
-        val buffered = BufferedBytesDestination(destination, 1024)
+        val destination = TestDestination()
+        val buffered = BufferedDestination(destination, 1024)
 
         val buffer1 = ByteArrayBuffer(1023)
         buffer1.write(ByteArray(1023) { it.toByte() })
@@ -41,8 +41,8 @@ class BufferedBytesDestinationTest {
 
     @Test
     fun testAwaitFreeSpaceWritesIfBufferIsFull() = testSuspend {
-        val destination = TestBytesDestination()
-        val buffered = BufferedBytesDestination(destination, 1024)
+        val destination = TestDestination()
+        val buffered = BufferedDestination(destination, 1024)
 
         val buffer1 = ByteArrayBuffer(1024)
         buffer1.write(ByteArray(1024) { it.toByte() })
@@ -55,8 +55,8 @@ class BufferedBytesDestinationTest {
 
     @Test
     fun testWriteByteFlushesIfBufferIsFull() = testSuspend {
-        val destination = TestBytesDestination()
-        val buffered = BufferedBytesDestination(destination, 1024)
+        val destination = TestDestination()
+        val buffered = BufferedDestination(destination, 1024)
 
         val buffer1 = ByteArrayBuffer(1023)
         buffer1.write(ByteArray(1023) { it.toByte() })
@@ -70,8 +70,8 @@ class BufferedBytesDestinationTest {
 
     @Test
     fun testWriteByteDoesNotFlushIfBufferIsNotFull() = testSuspend {
-        val destination = TestBytesDestination()
-        val buffered = BufferedBytesDestination(destination, 1024)
+        val destination = TestDestination()
+        val buffered = BufferedDestination(destination, 1024)
 
         val buffer1 = ByteArrayBuffer(1022)
         buffer1.write(ByteArray(1022) { it.toByte() })
@@ -83,8 +83,8 @@ class BufferedBytesDestinationTest {
 
     @Test
     fun testWriteShort() = testSuspend {
-        val destination = TestBytesDestination()
-        val buffered = BufferedBytesDestination(destination, 2)
+        val destination = TestDestination()
+        val buffered = BufferedDestination(destination, 2)
 
         buffered.writeByte(1)
         buffered.writeShort(999)
@@ -101,8 +101,8 @@ class BufferedBytesDestinationTest {
 
     @Test
     fun testWriteInt() = testSuspend {
-        val destination = TestBytesDestination()
-        val buffered = BufferedBytesDestination(destination, 3)
+        val destination = TestDestination()
+        val buffered = BufferedDestination(destination, 3)
 
         buffered.writeByte(1)
         buffered.writeInt(999999)
@@ -119,8 +119,8 @@ class BufferedBytesDestinationTest {
 
     @Test
     fun testWriteLong() = testSuspend {
-        val destination = TestBytesDestination()
-        val buffered = BufferedBytesDestination(destination, 5)
+        val destination = TestDestination()
+        val buffered = BufferedDestination(destination, 5)
 
         buffered.writeByte(1)
         buffered.writeLong(999999999)

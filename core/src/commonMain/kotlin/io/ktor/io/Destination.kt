@@ -1,10 +1,9 @@
 package io.ktor.io
 
-public abstract class BytesDestination : Closeable {
+public abstract class Destination : Closeable {
     public abstract val closedCause: Throwable?
-    public abstract fun canWrite(): Boolean
 
-    public abstract fun write(buffer: Buffer)
+    public abstract fun write(data: Buffer): Int
     public abstract suspend fun flush()
     public abstract suspend fun awaitFreeSpace()
 

@@ -20,8 +20,8 @@ public abstract class Buffer {
     public abstract fun read(destination: ByteArray, startIndex: Int = 0, endIndex: Int = destination.size): Int
     public abstract fun write(source: ByteArray, startIndex: Int = 0, endIndex: Int = source.size): Int
 
-    public abstract fun read(destination: Buffer)
-    public abstract fun write(source: Buffer)
+    public abstract fun read(destination: Buffer): Int
+    public abstract fun write(source: Buffer): Int
 
     public abstract fun release()
     public abstract fun compact()

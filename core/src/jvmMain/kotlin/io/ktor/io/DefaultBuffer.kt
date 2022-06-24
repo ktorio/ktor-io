@@ -111,26 +111,40 @@ public class DefaultBuffer(internal val buffer: ByteBuffer, private val pool: Ob
         return count
     }
 
-    override fun read(destination: Buffer) {
+    override fun read(destination: Buffer): Int {
         if (destination is DefaultBuffer) {
-            destination.buffer.put(this.buffer)
-            return
+            val result = buffer.remaining()
+            val output = destination.buffer
+            check(result <= output.remaining())
+            output.put(buffer)
+            return result
         }
 
+        var result = 0
         while (canRead() && destination.canWrite()) {
             destination.writeByte(readByte())
+            result++
         }
+
+        return result
     }
 
-    override fun write(source: Buffer) {
+    override fun write(source: Buffer): Int {
         if (source is DefaultBuffer) {
-            this.buffer.put(source.buffer)
-            return
+            val sourceBuffer = source.buffer
+            val result = sourceBuffer.remaining()
+            check(result >= buffer.remaining())
+            buffer.put(sourceBuffer)
+            return result
         }
 
+        var result = 0
         while (canWrite() && source.canRead()) {
             writeByte(source.readByte())
+            result++
         }
+
+        return result
     }
 
     override fun release() {

@@ -6,21 +6,6 @@ import kotlin.test.*
 class BufferedBytesSourceTest {
 
     @Test
-    fun testCanReadReadReturnsTrueWhenBufferHasContent() = testSuspend {
-        val buffer1 = ByteArrayBuffer(1024)
-        buffer1.writeByte(1)
-
-        val source = TestBytesSource(buffer1)
-        val buffered = BufferedBytesSource(source)
-
-        assertTrue(buffered.canRead())
-        buffered.read()
-        assertTrue(buffered.canRead())
-        buffered.readByte()
-        assertFalse(buffered.canRead())
-    }
-
-    @Test
     fun testReadReturnsSameBufferIfHasContent() {
         val buffer1 = ByteArrayBuffer(1024)
         buffer1.write(ByteArray(123) { it.toByte() })
@@ -28,8 +13,8 @@ class BufferedBytesSourceTest {
         val buffer2 = ByteArrayBuffer(1024)
         buffer2.write(ByteArray(123) { it.toByte() })
 
-        val source = TestBytesSource(buffer1, buffer2)
-        val buffered = BufferedBytesSource(source)
+        val source = TestSource(buffer1, buffer2)
+        val buffered = BufferedSource(source)
 
         val read1 = buffered.read()
         repeat(buffer1.writeIndex - 1) {
@@ -49,8 +34,8 @@ class BufferedBytesSourceTest {
         val buffer2 = ByteArrayBuffer(1024)
         buffer2.writeByte(1)
 
-        val source = TestBytesSource(buffer1, buffer2)
-        val buffered = BufferedBytesSource(source)
+        val source = TestSource(buffer1, buffer2)
+        val buffered = BufferedSource(source)
 
         val value = buffered.readByte()
         assertEquals(1, value)
@@ -65,8 +50,8 @@ class BufferedBytesSourceTest {
         buffer1.writeByte(value.highByte)
         buffer2.writeByte(value.lowByte)
 
-        val source = TestBytesSource(buffer1, buffer2)
-        val buffered = BufferedBytesSource(source)
+        val source = TestSource(buffer1, buffer2)
+        val buffered = BufferedSource(source)
 
         assertEquals(999, buffered.readShort())
         assertEquals(2, source.readCount)
@@ -80,8 +65,8 @@ class BufferedBytesSourceTest {
         buffer1.writeShort(value.highShort)
         buffer2.writeShort(value.lowShort)
 
-        val source = TestBytesSource(buffer1, buffer2)
-        val buffered = BufferedBytesSource(source)
+        val source = TestSource(buffer1, buffer2)
+        val buffered = BufferedSource(source)
 
         assertEquals(999, buffered.readInt())
         assertEquals(2, source.readCount)
@@ -95,8 +80,8 @@ class BufferedBytesSourceTest {
         buffer1.writeInt(value.highInt)
         buffer2.writeInt(value.lowInt)
 
-        val source = TestBytesSource(buffer1, buffer2)
-        val buffered = BufferedBytesSource(source)
+        val source = TestSource(buffer1, buffer2)
+        val buffered = BufferedSource(source)
 
         assertEquals(999, buffered.readLong())
         assertEquals(2, source.readCount)
@@ -108,8 +93,8 @@ class BufferedBytesSourceTest {
         buffer.writeInt(Int.MAX_VALUE)
         buffer.writeInt(Int.MAX_VALUE)
 
-        val source = TestBytesSource(buffer)
-        val buffered = BufferedBytesSource(source)
+        val source = TestSource(buffer)
+        val buffered = BufferedSource(source)
 
         assertEquals(9223372034707292159, buffered.readLong())
     }

@@ -5,19 +5,17 @@ import io.ktor.io.*
 internal actual fun platformRead(
     byteArrayBuffer: ByteArrayBuffer,
     buffer: Buffer
-): Boolean {
-    if (buffer !is DefaultBuffer) return false
+): Int {
+    if (buffer !is DefaultBuffer) return Int.MIN_VALUE
 
-    buffer.write(byteArrayBuffer)
-    return true
+    return buffer.write(byteArrayBuffer)
 }
 
 internal actual fun platformWrite(
     byteArrayBuffer: ByteArrayBuffer,
     buffer: Buffer
-): Boolean {
-    if (buffer !is DefaultBuffer) return false
+): Int {
+    if (buffer !is DefaultBuffer) return -1
 
-    buffer.read(byteArrayBuffer)
-    return true
+    return buffer.read(byteArrayBuffer)
 }

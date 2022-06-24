@@ -2,25 +2,24 @@ package io.ktor.io.utils
 
 import io.ktor.io.*
 
-class TestBytesDestination : BytesDestination() {
+class TestDestination : Destination() {
     internal val buffers = mutableListOf<Buffer>()
     internal val writeCount: Int get() = buffers.size
 
     override var closedCause: Throwable? = null
 
-    override fun canWrite(): Boolean = closedCause != null
-
-    override fun write(buffer: Buffer) {
+    override fun write(buffer: Buffer): Int {
         val copy = ByteArrayBuffer(buffer.readCapacity())
         val array = ByteArray(buffer.readCapacity())
         buffer.read(array)
         copy.write(array)
         buffers.add(copy)
         buffer.readIndex = buffer.writeIndex
+        return array.size
     }
 
-    override suspend fun flush() = Unit
-    override suspend fun awaitFreeSpace() = Unit
+    override suspend fun flush() {}
+    override suspend fun awaitFreeSpace() {}
 
     override fun close(cause: Throwable?) {
         closedCause = cause ?: ClosedDestinationException()
