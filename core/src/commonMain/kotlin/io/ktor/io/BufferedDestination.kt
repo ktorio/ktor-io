@@ -58,12 +58,17 @@ public class BufferedDestination(
     public suspend fun writeByte(value: Byte) {
         closedCause?.let { throw it }
 
-        if (buffer.canWrite()) {
-            buffer.writeByte(value)
-        } else {
-            awaitFreeSpace()
-            buffer.writeByte(value)
-        }
+        awaitFreeSpace()
+        buffer.writeByte(value)
+
+        flushIfFull()
+    }
+
+    public suspend fun writeBoolean(value: Boolean) {
+        closedCause?.let { throw it }
+
+        awaitFreeSpace()
+        buffer.writeBoolean(value)
 
         flushIfFull()
     }
@@ -94,6 +99,10 @@ public class BufferedDestination(
         flushIfFull()
     }
 
+    public suspend fun writeFloat(value: Float) {
+        writeInt(value.toRawBits())
+    }
+
     public suspend fun writeLong(value: Long) {
         closedCause?.let { throw it }
 
@@ -107,9 +116,11 @@ public class BufferedDestination(
         flushIfFull()
     }
 
+    public suspend fun writeDouble(value: Double) {
+        writeLong(value.toRawBits())
+    }
+
     private suspend fun flushIfFull() {
-        if (!buffer.canWrite()) {
-            flush()
-        }
+        if (!buffer.canWrite()) flush()
     }
 }

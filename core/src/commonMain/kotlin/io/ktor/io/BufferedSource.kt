@@ -30,7 +30,9 @@ public class BufferedSource(
         cancelCause?.let { throw it }
 
         if (buffer.canRead()) return true
-        return delegate.awaitContent()
+        val result = delegate.awaitContent()
+        buffer = delegate.read()
+        return result
     }
 
     override fun cancel(cause: Throwable) {
@@ -40,30 +42,32 @@ public class BufferedSource(
     public suspend fun readByte(): Byte {
         cancelCause?.let { throw it }
 
-        while (!buffer.canRead()) {
-            awaitContent()
-            read()
-        }
+        awaitContent()
         return buffer.readByte()
+    }
+
+    public suspend fun readBoolean(): Boolean {
+        cancelCause?.let { throw it }
+
+        awaitContent()
+        return buffer.readBoolean()
     }
 
     public suspend fun readShort(): Short {
         cancelCause?.let { throw it }
 
-        if (buffer.readCapacity() >= 2) {
-            return buffer.readShort()
-        }
+        if (buffer.readCapacity() >= 2) return buffer.readShort()
         return Short(readByte(), readByte())
     }
 
     public suspend fun readInt(): Int {
         cancelCause?.let { throw it }
 
-        if (buffer.readCapacity() >= 4) {
-            return buffer.readInt()
-        }
+        if (buffer.readCapacity() >= 4) return buffer.readInt()
         return Int(readShort(), readShort())
     }
+
+    public suspend fun readFloat(): Float = Float.fromBits(readInt())
 
     public suspend fun readLong(): Long {
         cancelCause?.let { throw it }
@@ -73,4 +77,6 @@ public class BufferedSource(
         }
         return Long(readInt(), readInt())
     }
+
+    public suspend fun readDouble(): Double = Double.fromBits(readLong())
 }
