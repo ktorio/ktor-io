@@ -6,7 +6,7 @@ import kotlin.test.*
 class BufferedBytesSourceTest {
 
     @Test
-    fun testReadReturnsSameBufferIfHasContent() {
+    fun testPeekReturnsSameBufferIfHasContent() {
         val buffer1 = ByteArrayBuffer(1024)
         buffer1.write(ByteArray(123) { it.toByte() })
 
@@ -16,16 +16,16 @@ class BufferedBytesSourceTest {
         val source = TestSource(buffer1, buffer2)
         val buffered = BufferedSource(source)
 
-        val read1 = buffered.read()
+        val read1 = buffered.peek()
         repeat(buffer1.writeIndex - 1) {
             buffer1.readByte()
         }
-        val read2 = buffered.read()
+        val read2 = buffered.peek()
         assertSame(read1, read2)
 
         read2.readByte()
-        val read3 = buffered.read()
-        assertNotSame(read2, read3)
+        val read3 = buffered.peek()
+        assertSame(read2, read3)
     }
 
     @Test

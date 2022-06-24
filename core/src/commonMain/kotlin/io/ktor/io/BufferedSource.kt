@@ -10,23 +10,24 @@ public class BufferedSource(
         buffer = delegate.read()
     }
 
-    override val closedCause: Throwable?
-        get() = delegate.closedCause
+    override val cancelCause: Throwable?
+        get() = delegate.cancelCause
 
     override fun read(): Buffer {
-        closedCause?.let { throw it }
+        cancelCause?.let { throw it }
 
-        if (buffer.canRead()) {
-            return buffer
-        }
-
-        buffer.release()
+        val result = buffer
         buffer = delegate.read()
+        return result
+    }
+
+    public fun peek(): Buffer {
+        cancelCause?.let { throw it }
         return buffer
     }
 
     override suspend fun awaitContent(): Boolean {
-        closedCause?.let { throw it }
+        cancelCause?.let { throw it }
 
         if (buffer.canRead()) return true
         return delegate.awaitContent()
@@ -37,7 +38,7 @@ public class BufferedSource(
     }
 
     public suspend fun readByte(): Byte {
-        closedCause?.let { throw it }
+        cancelCause?.let { throw it }
 
         while (!buffer.canRead()) {
             awaitContent()
@@ -47,7 +48,7 @@ public class BufferedSource(
     }
 
     public suspend fun readShort(): Short {
-        closedCause?.let { throw it }
+        cancelCause?.let { throw it }
 
         if (buffer.readCapacity() >= 2) {
             return buffer.readShort()
@@ -56,7 +57,7 @@ public class BufferedSource(
     }
 
     public suspend fun readInt(): Int {
-        closedCause?.let { throw it }
+        cancelCause?.let { throw it }
 
         if (buffer.readCapacity() >= 4) {
             return buffer.readInt()
@@ -65,7 +66,7 @@ public class BufferedSource(
     }
 
     public suspend fun readLong(): Long {
-        closedCause?.let { throw it }
+        cancelCause?.let { throw it }
 
         if (buffer.readCapacity() >= 8) {
             return buffer.readLong()

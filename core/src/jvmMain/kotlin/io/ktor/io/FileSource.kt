@@ -28,19 +28,19 @@ public class FileSource(private val channel: AsynchronousFileChannel) : Source()
     private var isClosedForRead = false
 
     @Volatile
-    override var closedCause: Throwable? = null
+    override var cancelCause: Throwable? = null
         private set
 
     private var buffer: Buffer? = null
 
     override fun read(): Buffer {
-        closedCause?.let { throw it }
+        cancelCause?.let { throw it }
 
         return buffer.also { buffer = null } ?: Buffer.Empty
     }
 
     override suspend fun awaitContent(): Boolean {
-        closedCause?.let { throw it }
+        cancelCause?.let { throw it }
 
         val buffer = BufferPool.borrow()
         val byteBuffer = buffer.buffer
@@ -54,8 +54,8 @@ public class FileSource(private val channel: AsynchronousFileChannel) : Source()
     }
 
     override fun cancel(cause: Throwable) {
-        if (closedCause != null) return
-        closedCause = cause
+        if (cancelCause != null) return
+        cancelCause = cause
         channel.close()
     }
 
@@ -68,8 +68,8 @@ public class FileSource(private val channel: AsynchronousFileChannel) : Source()
 
         override fun failed(cause: Throwable, attachment: Unit) {
             if (cause is AsynchronousCloseException) {
-                check(closedCause != null)
-                readCompletionContinuation.resumeWithException(closedCause!!)
+                check(cancelCause != null)
+                readCompletionContinuation.resumeWithException(cancelCause!!)
                 return
             }
 
