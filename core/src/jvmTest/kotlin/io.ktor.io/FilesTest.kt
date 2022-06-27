@@ -25,7 +25,7 @@ class FilesTest {
         while (source.awaitContent()) {
             val buffer = source.read()
 
-            while (buffer.canRead()) {
+            while (buffer.isNotEmpty) {
                 destination.awaitFreeSpace()
                 destination.write(buffer)
             }
@@ -57,7 +57,7 @@ class FilesTest {
         while (source.awaitContent()) {
             val buffer = source.read()
 
-            while (buffer.canRead()) {
+            while (buffer.isNotEmpty) {
                 destination.awaitFreeSpace()
                 destination.write(buffer)
             }

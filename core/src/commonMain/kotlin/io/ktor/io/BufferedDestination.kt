@@ -5,14 +5,10 @@ public class BufferedDestination(
     bufferSize: Int = DEFAULT_BUFFER_SIZE
 ) : Destination() {
 
-    private val buffer: Buffer
-
-    init {
-        buffer = if (bufferSize == DEFAULT_BUFFER_SIZE) {
-            ByteArrayBufferPool.Default.borrow()
-        } else {
-            ByteArrayBuffer(bufferSize)
-        }
+    private val buffer: Buffer = if (bufferSize == DEFAULT_BUFFER_SIZE) {
+        ByteArrayBufferPool.Default.borrow()
+    } else {
+        ByteArrayBuffer(bufferSize)
     }
 
     override val closedCause: Throwable?
@@ -27,7 +23,7 @@ public class BufferedDestination(
     override suspend fun flush() {
         closedCause?.let { throw it }
 
-        while (buffer.canRead()) {
+        while (buffer.isNotEmpty) {
             delegate.write(buffer)
             delegate.awaitFreeSpace()
         }
@@ -39,7 +35,7 @@ public class BufferedDestination(
     override suspend fun awaitFreeSpace() {
         closedCause?.let { throw it }
 
-        while (!buffer.canWrite()) {
+        while (!buffer.isNotEmpty) {
             delegate.awaitFreeSpace()
             delegate.write(buffer)
             buffer.compact()
@@ -47,7 +43,7 @@ public class BufferedDestination(
     }
 
     override fun close(cause: Throwable?) {
-        buffer.release()
+        buffer.close()
         delegate.close(cause)
     }
 
@@ -76,7 +72,7 @@ public class BufferedDestination(
     public suspend fun writeShort(value: Short) {
         closedCause?.let { throw it }
 
-        if (buffer.writeCapacity() >= 2) {
+        if (buffer.availableForWrite >= 2) {
             buffer.writeShort(value)
         } else {
             writeByte(value.highByte)
@@ -89,7 +85,7 @@ public class BufferedDestination(
     public suspend fun writeInt(value: Int) {
         closedCause?.let { throw it }
 
-        if (buffer.writeCapacity() >= 4) {
+        if (buffer.availableForWrite >= 4) {
             buffer.writeInt(value)
         } else {
             writeShort(value.highShort)
@@ -106,7 +102,7 @@ public class BufferedDestination(
     public suspend fun writeLong(value: Long) {
         closedCause?.let { throw it }
 
-        if (buffer.writeCapacity() >= 8) {
+        if (buffer.availableForWrite >= 8) {
             buffer.writeLong(value)
         } else {
             writeInt(value.highInt)
@@ -121,6 +117,6 @@ public class BufferedDestination(
     }
 
     private suspend fun flushIfFull() {
-        if (!buffer.canWrite()) flush()
+        if (!buffer.isFull) flush()
     }
 }

@@ -2,19 +2,14 @@ package io.ktor.io
 
 public class BufferedSource(
     private val delegate: Source
-) : Source() {
-
-    private var buffer: Buffer
-
-    init {
-        buffer = delegate.read()
-    }
+) : Source(), SourceReader {
+    private var buffer: Buffer = delegate.read()
 
     override val cancelCause: Throwable?
         get() = delegate.cancelCause
 
     override fun read(): Buffer {
-        cancelCause?.let { throw it }
+        checkCancelled()
 
         val result = buffer
         buffer = delegate.read()
@@ -22,61 +17,67 @@ public class BufferedSource(
     }
 
     public fun peek(): Buffer {
-        cancelCause?.let { throw it }
+        checkCancelled()
         return buffer
     }
 
     override suspend fun awaitContent(): Boolean {
-        cancelCause?.let { throw it }
+        checkCancelled()
 
-        if (buffer.canRead()) return true
+        if (buffer.isNotEmpty) return true
         val result = delegate.awaitContent()
         buffer = delegate.read()
         return result
     }
 
-    override fun cancel(cause: Throwable) {
-        delegate.cancel(cause)
-    }
-
-    public suspend fun readByte(): Byte {
-        cancelCause?.let { throw it }
+    public override suspend fun peekByte(): Byte {
+        checkCancelled()
 
         awaitContent()
         return buffer.readByte()
     }
 
-    public suspend fun readBoolean(): Boolean {
-        cancelCause?.let { throw it }
+    public override suspend fun peekShort(): Short {
+        checkCancelled()
 
-        awaitContent()
-        return buffer.readBoolean()
-    }
-
-    public suspend fun readShort(): Short {
-        cancelCause?.let { throw it }
-
-        if (buffer.readCapacity() >= 2) return buffer.readShort()
+        if (buffer.availableForRead >= 2) return buffer.readShort()
         return Short(readByte(), readByte())
     }
 
-    public suspend fun readInt(): Int {
-        cancelCause?.let { throw it }
+    public override suspend fun peekInt(): Int {
+        checkCancelled()
 
-        if (buffer.readCapacity() >= 4) return buffer.readInt()
+        if (buffer.availableForRead >= 4) return buffer.readInt()
         return Int(readShort(), readShort())
     }
 
-    public suspend fun readFloat(): Float = Float.fromBits(readInt())
+    public override suspend fun peekLong(): Long {
+        checkCancelled()
 
-    public suspend fun readLong(): Long {
-        cancelCause?.let { throw it }
-
-        if (buffer.readCapacity() >= 8) {
+        if (buffer.availableForRead >= 8) {
             return buffer.readLong()
         }
         return Long(readInt(), readInt())
     }
 
-    public suspend fun readDouble(): Double = Double.fromBits(readLong())
+    public override suspend fun discard(count: Int) {
+        var remaining = count
+        while (remaining > buffer.availableForRead) {
+            remaining -= buffer.availableForRead
+
+            buffer.close()
+            buffer = delegate.read()
+        }
+
+        buffer.readIndex += remaining
+    }
+
+    override fun cancel(cause: Throwable) {
+        buffer.close()
+        delegate.cancel(cause)
+    }
+
+    private fun checkCancelled() {
+        cancelCause?.let { throw it }
+    }
 }

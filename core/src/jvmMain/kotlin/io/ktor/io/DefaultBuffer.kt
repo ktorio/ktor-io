@@ -121,7 +121,7 @@ public class DefaultBuffer(internal val buffer: ByteBuffer, private val pool: Ob
         }
 
         var result = 0
-        while (canRead() && destination.canWrite()) {
+        while (isNotEmpty && destination.isNotFull) {
             destination.writeByte(readByte())
             result++
         }
@@ -139,7 +139,7 @@ public class DefaultBuffer(internal val buffer: ByteBuffer, private val pool: Ob
         }
 
         var result = 0
-        while (canWrite() && source.canRead()) {
+        while (isNotFull && source.isNotEmpty) {
             writeByte(source.readByte())
             result++
         }
@@ -147,7 +147,7 @@ public class DefaultBuffer(internal val buffer: ByteBuffer, private val pool: Ob
         return result
     }
 
-    override fun release() {
+    override fun close() {
         pool.recycle(buffer)
     }
 

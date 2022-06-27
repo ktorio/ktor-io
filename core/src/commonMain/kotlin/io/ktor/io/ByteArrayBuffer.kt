@@ -88,9 +88,7 @@ public class ByteArrayBuffer(
 
     override fun read(destination: Buffer): Int {
         val count = platformRead(this, destination)
-        if (count != Int.MIN_VALUE) {
-            return count
-        }
+        if (count != Int.MIN_VALUE) return count
 
         if (destination is ByteArrayBuffer) {
             val result = read(destination.array, destination.writeIndex, destination.capacity)
@@ -99,7 +97,7 @@ public class ByteArrayBuffer(
         }
 
         var result = 0
-        while (destination.canWrite() && canRead()) {
+        while (isNotEmpty && destination.isNotFull) {
             destination.writeByte(readByte())
             result++
         }
@@ -118,7 +116,7 @@ public class ByteArrayBuffer(
         }
 
         var result = 0
-        while (source.canRead() && canWrite()) {
+        while (source.isNotEmpty && isNotFull) {
             writeByte(source.readByte())
             result++
         }
@@ -126,14 +124,14 @@ public class ByteArrayBuffer(
         return result
     }
 
-    override fun release() {
+    override fun close() {
         pool.recycle(this)
     }
 
     override fun compact() {
         if (readIndex == 0) return
         array.copyInto(array, 0, readIndex, writeIndex)
-        writeIndex = readCapacity()
+        writeIndex = availableForRead
         readIndex = 0
     }
 

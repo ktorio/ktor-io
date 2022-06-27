@@ -38,7 +38,7 @@ public class FileDestination(private val channel: FileChannel) : Destination() {
 
     private fun slowWrite(buffer: Buffer): Int {
         DefaultDirectByteBufferPool.useInstance { byteBuffer ->
-            val toWrite = min(buffer.readCapacity(), byteBuffer.remaining())
+            val toWrite = min(buffer.availableForRead, byteBuffer.remaining())
             if (buffer is ByteArrayBuffer) {
                 byteBuffer.put(buffer.array, buffer.readIndex, toWrite)
                 buffer.readIndex += toWrite
