@@ -27,66 +27,76 @@ plugins {
     id("org.jetbrains.kotlinx.kover") version "0.5.0"
 }
 
-allprojects {
-    group = "io.ktor"
+group = "io.ktor"
 
-    repositories {
-        mavenLocal()
-        mavenCentral()
-        maven(url = "https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven")
-        maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven(url = "https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven")
+    maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
+}
+
+apply(plugin = "kotlin-multiplatform")
+apply(plugin = "kotlinx-atomicfu")
+
+val coroutines_version: String by extra
+
+kotlin {
+    jvm {
+        compilations.all {
+            kotlinOptions.jvmTarget = "1.8"
+        }
+        testRuns["test"].executionTask.configure {
+            useJUnitPlatform()
+        }
+    }
+    js(IR){
+        browser()
+        nodejs()
     }
 
-    apply(plugin = "kotlin-multiplatform")
-    apply(plugin = "kotlinx-atomicfu")
+    mingwX64()
+    linuxX64()
+    macosX64()
 
-    val coroutines_version: String by extra
+    explicitApi()
 
-    kotlin {
-        jvm {
-            compilations.all {
-                kotlinOptions.jvmTarget = "1.8"
-            }
-            withJava()
-            testRuns["test"].executionTask.configure {
-                useJUnitPlatform()
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
             }
         }
-        js(BOTH) {
-            browser {
-                commonWebpackConfig {
-                    cssSupport.enabled = true
-                }
+        val commonTest by getting {
+            dependencies {
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version")
+                implementation(kotlin("test"))
             }
         }
-        val hostOs = System.getProperty("os.name")
-        val isMingwX64 = hostOs.startsWith("Windows")
-        val nativeTarget = when {
-            hostOs == "Mac OS X" -> macosX64("native")
-            hostOs == "Linux" -> linuxX64("native")
-            isMingwX64 -> mingwX64("native")
-            else -> throw GradleException("Host OS is not supported in Kotlin/Native.")
+        val jvmMain by getting
+        val jvmTest by getting
+        val jsMain by getting
+        val jsTest by getting
+
+        val nativeMain by creating
+        val nativeTest by creating
+
+        nativeMain.dependsOn(commonMain)
+        nativeTest.dependsOn(commonTest)
+        nativeTest.dependsOn(nativeMain)
+
+        val mingwX64Main by getting
+        val mingwX64Test by getting
+        val linuxX64Main by getting
+        val linuxX64Test by getting
+        val macosX64Main by getting
+        val macosX64Test by getting
+
+        listOf(linuxX64Main, mingwX64Main, macosX64Main).forEach {
+            it.dependsOn(nativeMain)
         }
 
-        explicitApi()
-
-        sourceSets {
-            val commonMain by getting {
-                dependencies {
-                    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version")
-                }
-            }
-            val commonTest by getting {
-                dependencies {
-                    implementation(kotlin("test"))
-                }
-            }
-            val jvmMain by getting
-            val jvmTest by getting
-            val jsMain by getting
-            val jsTest by getting
-            val nativeMain by getting
-            val nativeTest by getting
+        listOf(linuxX64Test, mingwX64Test, macosX64Test).forEach {
+            it.dependsOn(nativeTest)
         }
     }
 }
