@@ -95,7 +95,9 @@ class BufferedBytesDestinationTest {
         val buffer1 = destination.buffers[0]
         val buffer2 = destination.buffers[1]
         buffer1.readByte()
-        val value = Short(buffer1.readByte(), buffer2.readByte())
+        val highByte = buffer1.readByte()
+        val lowByte = buffer2.readByte()
+        val value = ((highByte.toInt() shl 8) or (lowByte.toInt() and 0xff)).toShort()
         assertEquals(999, value)
     }
 
@@ -113,7 +115,9 @@ class BufferedBytesDestinationTest {
         val buffer1 = destination.buffers[0]
         val buffer2 = destination.buffers[1]
         buffer1.readByte()
-        val value = Int(buffer1.readShort(), buffer2.readShort())
+        val highShort = buffer1.readShort()
+        val lowShort = buffer2.readShort()
+        val value = (highShort.toInt() shl 16) or (lowShort.toInt() and 0xffff)
         assertEquals(999999, value)
     }
 
@@ -131,7 +135,9 @@ class BufferedBytesDestinationTest {
         val buffer1 = destination.buffers[0]
         val buffer2 = destination.buffers[1]
         buffer1.readByte()
-        val value = Long(buffer1.readInt(), buffer2.readInt())
+        val highInt = buffer1.readInt()
+        val lowInt = buffer2.readInt()
+        val value = (highInt.toLong() shl 32) or (lowInt.toLong() and 0xffffffffL)
         assertEquals(999999999, value)
     }
 }

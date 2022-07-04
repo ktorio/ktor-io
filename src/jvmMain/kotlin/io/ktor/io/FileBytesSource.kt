@@ -1,7 +1,5 @@
 package io.ktor.io
 
-import kotlinx.coroutines.CancellableContinuation
-import kotlinx.coroutines.suspendCancellableCoroutine
 import java.nio.ByteBuffer
 import java.nio.channels.AsynchronousCloseException
 import java.nio.channels.AsynchronousFileChannel
@@ -10,8 +8,10 @@ import java.nio.file.OpenOption
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.util.concurrent.ExecutorService
+import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 
 public fun FileBytesSource(
     file: Path,
@@ -64,7 +64,7 @@ public class FileBytesSource(private val channel: AsynchronousFileChannel) : Byt
         channel.close()
     }
 
-    private lateinit var readCompletionContinuation: CancellableContinuation<Int>
+    private lateinit var readCompletionContinuation: Continuation<Int>
 
     private val readCompletionHandler = object : CompletionHandler<Int, Unit> {
         override fun completed(result: Int, attachment: Unit) {
@@ -85,7 +85,7 @@ public class FileBytesSource(private val channel: AsynchronousFileChannel) : Byt
 
     private suspend fun AsynchronousFileChannel.read(
         byteBuffer: ByteBuffer
-    ) = suspendCancellableCoroutine<Int> { continuation ->
+    ): Int = suspendCoroutine { continuation ->
         readCompletionContinuation = continuation
         read(byteBuffer, bytesRead, Unit, readCompletionHandler)
     }
