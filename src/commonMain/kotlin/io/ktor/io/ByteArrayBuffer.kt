@@ -125,7 +125,7 @@ public class ByteArrayBuffer(
     override fun compact() {
         if (readIndex == 0) return
         array.copyInto(array, 0, readIndex, writeIndex)
-        writeIndex = readCapacity()
+        writeIndex = availableForRead()
         readIndex = 0
     }
 

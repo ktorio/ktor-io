@@ -54,7 +54,7 @@ public class BufferedBytesSource(
     public suspend fun readShort(): Short {
         closedCause?.let { throw it }
 
-        if (buffer.readCapacity() >= 2) {
+        if (buffer.availableForRead() >= 2) {
             return buffer.readShort()
         }
         return Short(readByte(), readByte())
@@ -63,7 +63,7 @@ public class BufferedBytesSource(
     public suspend fun readInt(): Int {
         closedCause?.let { throw it }
 
-        if (buffer.readCapacity() >= 4) {
+        if (buffer.availableForRead() >= 4) {
             return buffer.readInt()
         }
         return Int(readShort(), readShort())
@@ -72,7 +72,7 @@ public class BufferedBytesSource(
     public suspend fun readLong(): Long {
         closedCause?.let { throw it }
 
-        if (buffer.readCapacity() >= 8) {
+        if (buffer.availableForRead() >= 8) {
             return buffer.readLong()
         }
         return Long(readInt(), readInt())
