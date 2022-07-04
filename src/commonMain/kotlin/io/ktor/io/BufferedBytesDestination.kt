@@ -73,7 +73,7 @@ public class BufferedBytesDestination(
     public suspend fun writeShort(value: Short) {
         closedCause?.let { throw it }
 
-        if (buffer.writeCapacity() >= 2) {
+        if (buffer.availableForWrite() >= 2) {
             buffer.writeShort(value)
         } else {
             writeByte(value.highByte)
@@ -86,7 +86,7 @@ public class BufferedBytesDestination(
     public suspend fun writeInt(value: Int) {
         closedCause?.let { throw it }
 
-        if (buffer.writeCapacity() >= 4) {
+        if (buffer.availableForWrite() >= 4) {
             buffer.writeInt(value)
         } else {
             writeShort(value.highShort)
@@ -99,7 +99,7 @@ public class BufferedBytesDestination(
     public suspend fun writeLong(value: Long) {
         closedCause?.let { throw it }
 
-        if (buffer.writeCapacity() >= 8) {
+        if (buffer.availableForWrite() >= 8) {
             buffer.writeLong(value)
         } else {
             writeInt(value.highInt)
