@@ -14,13 +14,13 @@ public class BufferedBytesSource(
         get() = delegate.closedCause
 
     override fun canRead(): Boolean {
-        return delegate.canRead() || buffer.canRead
+        return delegate.canRead() || buffer.isNotEmpty
     }
 
     override fun read(): Buffer {
         closedCause?.let { throw it }
 
-        if (buffer.canRead) {
+        if (buffer.isNotEmpty) {
             return buffer
         }
 
@@ -32,8 +32,7 @@ public class BufferedBytesSource(
     override suspend fun awaitContent() {
         closedCause?.let { throw it }
 
-        if (buffer.canRead) return
-
+        if (buffer.isNotEmpty) return
         delegate.awaitContent()
     }
 
@@ -44,7 +43,7 @@ public class BufferedBytesSource(
     public suspend fun readByte(): Byte {
         closedCause?.let { throw it }
 
-        while (!buffer.canRead) {
+        while (!buffer.isNotEmpty) {
             awaitContent()
             read()
         }

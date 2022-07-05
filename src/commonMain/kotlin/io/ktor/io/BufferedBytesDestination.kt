@@ -20,16 +20,16 @@ public class BufferedBytesDestination(
 
     override fun canWrite(): Boolean = delegate.canWrite()
 
-    override fun write(buffer: Buffer) {
+    override fun write(buffer: Buffer): Int {
         closedCause?.let { throw it }
 
-        this.buffer.writeBuffer(buffer)
+        return this.buffer.writeBuffer(buffer)
     }
 
     override suspend fun flush() {
         closedCause?.let { throw it }
 
-        while (buffer.canRead) {
+        while (buffer.isNotEmpty) {
             delegate.write(buffer)
             delegate.awaitFreeSpace()
         }
@@ -41,7 +41,7 @@ public class BufferedBytesDestination(
     override suspend fun awaitFreeSpace() {
         closedCause?.let { throw it }
 
-        while (!buffer.canWrite) {
+        while (buffer.isFull) {
             delegate.awaitFreeSpace()
             delegate.write(buffer)
             buffer.compact()
@@ -60,7 +60,7 @@ public class BufferedBytesDestination(
     public suspend fun writeByte(value: Byte) {
         closedCause?.let { throw it }
 
-        if (buffer.canWrite) {
+        if (buffer.isNotFull) {
             buffer.writeByte(value)
         } else {
             awaitFreeSpace()
@@ -110,7 +110,7 @@ public class BufferedBytesDestination(
     }
 
     private suspend fun flushIfFull() {
-        if (!buffer.canWrite) {
+        if (!buffer.isNotFull) {
             flush()
         }
     }

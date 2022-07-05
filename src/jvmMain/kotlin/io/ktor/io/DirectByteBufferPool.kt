@@ -3,10 +3,10 @@ package io.ktor.io
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-
-public class DirectByteBufferPool(
+public class ByteBufferPool(
     capacity: Int = DEFAULT_POOL_CAPACITY,
-    private val bufferSize: Int = DEFAULT_BUFFER_SIZE
+    public val direct: Boolean = true,
+    public val bufferSize: Int = DEFAULT_BUFFER_SIZE
 ) : DefaultPool<ByteBuffer>(capacity) {
 
     override fun produceInstance(): ByteBuffer = ByteBuffer.allocateDirect(bufferSize)!!
@@ -22,8 +22,12 @@ public class DirectByteBufferPool(
     }
 
     public companion object {
-        public val Default: ObjectPool<ByteBuffer> = DirectByteBufferPool()
+        public val Default: ObjectPool<ByteBuffer> get() = Direct
 
-        public val NoPool: ObjectPool<ByteBuffer> = DirectByteBufferPool(capacity = 0)
+        public val Direct: ObjectPool<ByteBuffer> = ByteBufferPool(direct = true)
+
+        public val Heap: ObjectPool<ByteBuffer> = ByteBufferPool(direct = false)
+
+        public val NoPool: ObjectPool<ByteBuffer> = ByteBufferPool(capacity = 0)
     }
 }

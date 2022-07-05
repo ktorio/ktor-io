@@ -1,7 +1,10 @@
 package io.ktor.io
 
-public val Buffer.canRead: Boolean get() = readIndex < writeIndex
-public val Buffer.canWrite: Boolean get() = writeIndex < capacity
+public val Buffer.isEmpty: Boolean get() = availableForRead == 0
+public val Buffer.isNotEmpty: Boolean get() = !isEmpty
+
+public val Buffer.isFull: Boolean get() = availableForWrite == 0
+public val Buffer.isNotFull: Boolean get() = !isFull
 
 public val Buffer.availableForRead: Int get() = writeIndex - readIndex
 public val Buffer.availableForWrite: Int get() = capacity - writeIndex

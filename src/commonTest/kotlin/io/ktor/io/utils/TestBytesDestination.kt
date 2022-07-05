@@ -10,13 +10,14 @@ class TestBytesDestination : BytesDestination() {
 
     override fun canWrite(): Boolean = closedCause != null
 
-    override fun write(buffer: Buffer) {
+    override fun write(buffer: Buffer): Int {
         val copy = ByteArrayBuffer(buffer.availableForRead)
         val array = ByteArray(buffer.availableForRead)
         buffer.copyToArray(array)
         copy.writeArray(array)
         buffers.add(copy)
         buffer.readIndex = buffer.writeIndex
+        return array.size
     }
 
     override suspend fun flush() = Unit
