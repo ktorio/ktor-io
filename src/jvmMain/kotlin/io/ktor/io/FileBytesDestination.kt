@@ -30,7 +30,7 @@ public class FileBytesDestination(private val channel: FileChannel) : BytesDesti
         closedCause?.let { throw it }
 
         try {
-            if (buffer is DefaultBuffer) {
+            if (buffer is JvmBuffer) {
                 channel.write(buffer.buffer)
                 return
             }
@@ -42,8 +42,8 @@ public class FileBytesDestination(private val channel: FileChannel) : BytesDesti
     }
 
     private fun slowWrite(buffer: Buffer) {
-        DefaultDirectByteBufferPool.useInstance { byteBuffer ->
-            val toWrite = min(buffer.availableForRead(), byteBuffer.remaining())
+        DirectByteBufferPool.Default.useInstance { byteBuffer ->
+            val toWrite = min(buffer.availableForRead, byteBuffer.remaining())
             if (buffer is ByteArrayBuffer) {
                 byteBuffer.put(buffer.array, buffer.readIndex, toWrite)
                 buffer.readIndex += toWrite

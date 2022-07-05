@@ -3,7 +3,6 @@ package io.ktor.io
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-public val DefaultDirectByteBufferPool: ObjectPool<ByteBuffer> = DirectByteBufferPool()
 
 public class DirectByteBufferPool(
     capacity: Int = DEFAULT_POOL_CAPACITY,
@@ -20,5 +19,11 @@ public class DirectByteBufferPool(
     override fun validateInstance(instance: ByteBuffer) {
         check(instance.capacity() == bufferSize)
         check(instance.isDirect)
+    }
+
+    public companion object {
+        public val Default: ObjectPool<ByteBuffer> = DirectByteBufferPool()
+
+        public val NoPool: ObjectPool<ByteBuffer> = DirectByteBufferPool(capacity = 0)
     }
 }

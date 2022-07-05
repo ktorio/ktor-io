@@ -85,12 +85,12 @@ class ByteArrayBufferTest {
         buffer.writeIndex = 0
 
         val array = ByteArray(123) { it.toByte() }
-        buffer.write(array)
+        buffer.writeArray(array)
 
         assertEquals(0, buffer.readIndex)
         assertEquals(123, buffer.writeIndex)
 
-        val newArray = ByteArray(123).also { buffer.read(it) }
+        val newArray = ByteArray(123).also { buffer.copyToArray(it) }
         assertContentEquals(array, newArray)
 
         assertEquals(123, buffer.readIndex)
@@ -154,17 +154,17 @@ class ByteArrayBufferTest {
         val buffer = ByteArrayBuffer(1024)
 
         val array = ByteArray(123)
-        var count = buffer.read(array)
+        var count = buffer.copyToArray(array)
         assertEquals(0, count)
 
         buffer.writeIndex = buffer.capacity - 123
         buffer.readIndex = buffer.writeIndex
-        buffer.write(array)
+        buffer.writeArray(array)
 
         val newArray = ByteArray(123)
         assertContentEquals(array, newArray)
         buffer.writeIndex = buffer.capacity - 122
-        count = buffer.write(array)
+        count = buffer.writeArray(array)
         assertEquals(122, count)
     }
 }

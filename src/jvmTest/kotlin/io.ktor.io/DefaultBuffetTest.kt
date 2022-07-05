@@ -15,7 +15,7 @@ class DefaultBuffetTest {
 
     @Test
     fun testWriteCanRead() {
-        val buffer = DefaultBuffer(ByteBuffer.allocate(1024).clear(), noPool)
+        val buffer = JvmBuffer(ByteBuffer.allocate(1024).clear(), noPool)
         buffer.writeIndex = 0
 
         buffer.writeByte(99)
@@ -24,7 +24,7 @@ class DefaultBuffetTest {
         buffer.writeLong(9_999_999_999_999)
 
         val array = ByteArray(123) { it.toByte() }
-        buffer.write(array)
+        buffer.writeArray(array)
 
         assertEquals(0, buffer.readIndex)
         assertEquals(138, buffer.writeIndex)
@@ -33,7 +33,7 @@ class DefaultBuffetTest {
         assertEquals(999, buffer.readShort())
         assertEquals(999_999, buffer.readInt())
         assertEquals(9_999_999_999_999, buffer.readLong())
-        val newArray = ByteArray(123).also { buffer.read(it) }
+        val newArray = ByteArray(123).also { buffer.copyToArray(it) }
         assertContentEquals(array, newArray)
 
         assertEquals(138, buffer.readIndex)

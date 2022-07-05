@@ -1,184 +1,115 @@
 package io.ktor.io
 
-import io.ktor.io.internal.*
 import kotlin.math.min
 
 public const val DEFAULT_POOL_CAPACITY: Int = 2000
 public const val DEFAULT_BUFFER_SIZE: Int = 1024 * 16
 
 public class ByteArrayBuffer(
-    public override val capacity: Int,
-    private val pool: ObjectPool<ByteArrayBuffer>
+    array: ByteArray,
+    private val pool: ObjectPool<ByteArray>
 ) : Buffer() {
 
-    public constructor(capacity: Int) : this(capacity, ByteArrayBufferPool.NoPool)
+    /**
+     * Creates buffer of fixed [capacity].
+     */
+    public constructor(capacity: Int) : this(ByteArray(capacity), ByteArrayPool.NoPool)
 
-    internal val array = ByteArray(capacity)
+    public constructor(pool: ObjectPool<ByteArray>) : this(pool.borrow(), pool)
+
+    /**
+     * Provides access to underlying byte array.
+     *
+     * Please note, all changes of the array will be reflected in the buffer.
+     */
+    @Suppress("CanBePrimaryConstructorProperty")
+    public var array: ByteArray = array
+
+    override val capacity: Int
+        get() = array.size
 
     override var readIndex: Int = 0
     override var writeIndex: Int = 0
 
-    override fun get(index: Int): Byte {
+    override fun loadByteAt(index: Int): Byte {
+        checkCanRead(index, 1, writeIndex)
         return array[index]
     }
 
-    override fun set(index: Int, value: Byte) {
+    override fun loadShortAt(index: Int): Short {
+        checkCanRead(index, 2, writeIndex)
+        return array.loadShortAt(index)
+    }
+
+    override fun loadIntAt(index: Int): Int {
+        checkCanRead(index, 4, writeIndex)
+        return array.loadIntAt(index)
+    }
+
+    override fun loadLongAt(index: Int): Long {
+        checkCanRead(index, 8, writeIndex)
+        return array.loadLongAt(index)
+    }
+
+    override fun storeByteAt(index: Int, value: Byte) {
+        checkCanWrite(index, 1, capacity)
         array[index] = value
     }
 
-    override fun readByte(): Byte {
-        checkHasBytesToRead(1)
-        return array[readIndex++]
+    override fun storeShortAt(index: Int, value: Short) {
+        checkCanWrite(index, 2, capacity)
+        array.storeShortAt(index, value)
     }
 
-    override fun readShort(): Short {
-        checkHasBytesToRead(2)
-        return doReadShort()
+    override fun storeIntAt(index: Int, value: Int) {
+        checkCanWrite(index, 4, capacity)
+        array.storeIntAt(index, value)
     }
 
-    override fun readInt(): Int {
-        checkHasBytesToRead(4)
-        return doReadInt()
+    override fun storeLongAt(index: Int, value: Long) {
+        checkCanWrite(index, 8, capacity)
+        array.storeLongAt(index, value)
     }
 
-    override fun readLong(): Long {
-        checkHasBytesToRead(8)
-        return doReadLong()
+    override fun storeBufferAt(index: Int, value: Buffer): Int {
+        return value.copyToArray(array, index, capacity)
     }
 
-    override fun writeByte(value: Byte) {
-        checkHasSpaceToWrite(1)
-        doWriteByte(value)
+    override fun storeArrayAt(index: Int, value: ByteArray, startPosition: Int, endPosition: Int): Int {
+        require(startPosition >= 0) { "startPosition($startPosition) must be >= 0" }
+        require(endPosition <= value.size) { "endPosition($endPosition) must be <= value.size(${value.size})" }
+        require(startPosition <= endPosition) { "startPosition($startPosition) must be <= endPosition($endPosition)" }
+
+        val count = min(capacity - index, endPosition - startPosition)
+        value.copyInto(array, index, startPosition, startPosition + count)
+        return count
     }
 
-    override fun writeShort(value: Short) {
-        checkHasSpaceToWrite(2)
-        doWriteShort(value)
-    }
+    override fun readArray(): ByteArray = array.sliceArray(readIndex until writeIndex)
 
-    override fun writeInt(value: Int) {
-        checkHasSpaceToWrite(4)
-        doWriteInt(value)
-    }
+    override fun copyToArray(destination: ByteArray, startIndex: Int, endIndex: Int): Int {
+        require(startIndex >= 0) { "startIndex($startIndex) must be >= 0" }
+        require(endIndex <= destination.size) { "endIndex($endIndex) must be <= destination.size(${destination.size})" }
+        require(startIndex <= endIndex) { "startIndex($startIndex) must be <= endIndex($endIndex)" }
 
-    override fun writeLong(value: Long) {
-        checkHasSpaceToWrite(8)
-        doWriteLong(value)
-    }
+        val count = min(availableForRead, endIndex - startIndex)
 
-    override fun read(destination: ByteArray, startIndex: Int, endIndex: Int): Int {
-        checkArrayBounds(destination, startIndex, endIndex)
-
-        val count = min(endIndex - startIndex, writeIndex - readIndex)
         array.copyInto(destination, startIndex, readIndex, readIndex + count)
         readIndex += count
-
         return count
     }
 
-    override fun write(source: ByteArray, startIndex: Int, endIndex: Int): Int {
-        checkArrayBounds(source, startIndex, endIndex)
-
-        val count = min(endIndex - startIndex, capacity - writeIndex)
-        source.copyInto(array, writeIndex, startIndex, startIndex + count)
-        writeIndex += endIndex
-
-        return count
-    }
-
-    override fun read(destination: Buffer) {
-        if (platformRead(this, destination)) {
-            return
-        }
-
-        if (destination is ByteArrayBuffer) {
-            val count = read(destination.array, destination.writeIndex, destination.capacity)
-            destination.writeIndex += count
-            return
-        }
-
-        while (destination.canWrite() && canRead()) {
-            destination.writeByte(readByte())
-        }
-    }
-
-    override fun write(source: Buffer) {
-        if (platformWrite(this, source)) {
-            return
-        }
-
-        if (source is ByteArrayBuffer) {
-            val count = write(source.array, source.readIndex, source.writeIndex)
-            source.readIndex += count
-            return
-        }
-
-        while (source.canRead() && canWrite()) {
-            writeByte(source.readByte())
-        }
-    }
-
-    override fun release() {
-        pool.recycle(this)
+    /**
+     * Returns this buffer back to the pool.
+     */
+    override fun close() {
+        pool.recycle(array)
     }
 
     override fun compact() {
         if (readIndex == 0) return
         array.copyInto(array, 0, readIndex, writeIndex)
-        writeIndex = availableForRead()
+        writeIndex = availableForRead
         readIndex = 0
     }
-
-    private fun doWriteByte(value: Byte) {
-        array[writeIndex++] = value
-    }
-
-    private fun doWriteShort(value: Short) {
-        doWriteByte(value.highByte)
-        doWriteByte(value.lowByte)
-    }
-
-    private fun doWriteInt(value: Int) {
-        doWriteShort(value.highShort)
-        doWriteShort(value.lowShort)
-    }
-
-    private fun doWriteLong(value: Long) {
-        doWriteInt(value.highInt)
-        doWriteInt(value.lowInt)
-    }
-
-    private fun doReadShort() = Short(readByte(), readByte())
-
-    private fun doReadInt() = Int(doReadShort(), doReadShort())
-
-    private fun doReadLong() = Long(doReadInt(), doReadInt())
-
-    private fun checkHasBytesToRead(count: Int) {
-        if (readIndex + count > writeIndex) {
-            throw IndexOutOfBoundsException(
-                "Read overflow, " +
-                    "trying to read $count bytes " +
-                    "from buffer with ${writeIndex - 1} bytes " +
-                    "and readIndex at $readIndex"
-            )
-        }
-    }
-
-    private fun checkHasSpaceToWrite(count: Int) {
-        if (writeIndex + count > capacity) {
-            throw IndexOutOfBoundsException(
-                "Write overflow, " +
-                    "trying to write $count bytes " +
-                    "to buffer of $capacity capacity " +
-                    "and writeIndex at $writeIndex"
-            )
-        }
-    }
-}
-
-private fun checkArrayBounds(array: ByteArray, startIndex: Int, endIndex: Int) {
-    require(startIndex >= 0) { "The startIndex must be non-negative, was $startIndex" }
-    require(endIndex <= array.size) { "The endIndex must be less than or equal to size, was $endIndex" }
-    require(startIndex <= endIndex) { "Range of negative size is given: [$startIndex, $endIndex)" }
 }
