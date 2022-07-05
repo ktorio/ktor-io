@@ -28,12 +28,16 @@ public abstract class Buffer : Closeable {
     /**
      * Reads [Boolean] at specific [index].
      *
+     * The operation doesn't modify [readIndex] or [writeIndex].
+     *
      * @throws IndexOutOfBoundsException if [index] is greater than [capacity].
      */
     public open fun loadBooleanAt(index: Int): Boolean = loadByteAt(index) != 0.toByte()
 
     /**
      * Reads [Byte] at specific [index].
+     *
+     * The operation doesn't modify [readIndex] or [writeIndex].
      *
      * @throws IndexOutOfBoundsException if [index] is greater than [capacity].
      */
@@ -42,12 +46,16 @@ public abstract class Buffer : Closeable {
     /**
      * Reads [Short] at specific [index].
      *
+     * The operation doesn't modify [readIndex] or [writeIndex].
+     *
      * @throws IndexOutOfBoundsException if [index] is greater than [capacity].
      */
     public abstract fun loadShortAt(index: Int): Short
 
     /**
      * Reads [Int] at specific [index].
+     *
+     * The operation doesn't modify [readIndex] or [writeIndex].
      *
      * @throws IndexOutOfBoundsException if [index] is greater than [capacity].
      */
@@ -56,26 +64,16 @@ public abstract class Buffer : Closeable {
     /**
      * Reads [Long] at specific [index].
      *
+     * The operation doesn't modify [readIndex] or [writeIndex].
+     *
      * @throws IndexOutOfBoundsException if [index] is greater than [capacity].
      */
     public abstract fun loadLongAt(index: Int): Long
 
     /**
-     * Reads [Float] at specific [index].
-     *
-     * @throws IndexOutOfBoundsException if [index] is greater than [capacity].
-     */
-    public abstract fun loadFloatAt(index: Int): Float
-
-    /**
-     * Reads [Double] at specific [index].
-     *
-     * @throws IndexOutOfBoundsException if [index] is greater than [capacity].
-     */
-    public abstract fun loadDoubleAt(index: Int): Double
-
-    /**
      * Writes [Boolean] at specific [index].
+     *
+     * The operation doesn't modify [readIndex] or [writeIndex].
      *
      * @throws IndexOutOfBoundsException if [index] is greater than [capacity].
      */
@@ -86,12 +84,16 @@ public abstract class Buffer : Closeable {
     /**
      * Writes [Byte] at specific [index].
      *
+     * The operation doesn't modify [readIndex] or [writeIndex].
+     *
      * @throws IndexOutOfBoundsException if [index] is greater than [capacity].
      */
     public abstract fun storeByteAt(index: Int, value: Byte)
 
     /**
      * Writes [Short] at specific [index].
+     *
+     * The operation doesn't modify [readIndex] or [writeIndex].
      *
      * @throws IndexOutOfBoundsException if [index] is greater than [capacity].
      */
@@ -100,6 +102,8 @@ public abstract class Buffer : Closeable {
     /**
      * Writes [Int] at specific [index].
      *
+     * The operation doesn't modify [readIndex] or [writeIndex].
+     *
      * @throws IndexOutOfBoundsException if [index] is greater than [capacity].
      */
     public abstract fun storeIntAt(index: Int, value: Int)
@@ -107,34 +111,26 @@ public abstract class Buffer : Closeable {
     /**
      * Writes [Long] at specific [index].
      *
+     * The operation doesn't modify [readIndex] or [writeIndex].
+     *
      * @throws IndexOutOfBoundsException if [index] is greater than [capacity].
      */
     public abstract fun storeLongAt(index: Int, value: Long)
 
     /**
-     * Writes [Float] at specific [index].
-     *
-     * @throws IndexOutOfBoundsException if [index] is greater than [capacity].
-     */
-    public abstract fun storeFloatAt(index: Int, value: Float)
-
-    /**
-     * Writes [Double] at specific [index].
-     *
-     * @throws IndexOutOfBoundsException if [index] is greater than [capacity].
-     */
-    public abstract fun storeDoubleAt(index: Int, value: Double)
-
-    /**
      * Writes as many bytes as possible from the [buffer] at specific [index].
+     *
+     * The operation modifies [readIndex] in [buffer], but doesn't modify [writeIndex] in this buffer.
      *
      * @return Number of written bytes: `min(availableForWrite, buffer.availableForRead)`
      * @throws IndexOutOfBoundsException if [index] is greater than [capacity].
      */
-    public abstract fun storeBufferAt(index: Int, buffer: Buffer): Int
+    public abstract fun storeBufferAt(index: Int, value: Buffer): Int
 
     /**
      * Copy all bytes from [value] between [startPosition] and [endPosition] to the buffer at specific [index].
+     *
+     * The operation doesn't modify [readIndex] or [writeIndex].
      *
      * @return Number of written bytes: `min(availableForWrite, endPosition - startPosition)`
      * @throws IndexOutOfBoundsException if [index] is greater than [capacity].
@@ -158,42 +154,45 @@ public abstract class Buffer : Closeable {
      *
      * @throws IndexOutOfBoundsException if [availableForRead] < 1.
      */
-    public open fun readByte(): Byte = loadByteAt(readIndex++)
+    public open fun readByte(): Byte {
+        checkCanRead(1)
+        return loadByteAt(readIndex++)
+    }
 
     /**
      * Reads [Short] from the buffer at [readIndex].
      *
      * @throws IndexOutOfBoundsException if [availableForRead] < 2.
      */
-    public open fun readShort(): Short = loadShortAt(readIndex).also { readIndex += 2 }
+    public open fun readShort(): Short {
+        checkCanRead(2)
+        return loadShortAt(readIndex).also { readIndex += 2 }
+    }
 
     /**
      * Reads [Int] from the buffer at [readIndex].
      *
      * @throws IndexOutOfBoundsException if [availableForRead] < 4.
      */
-    public open fun readInt(): Int = loadIntAt(readIndex).also { readIndex += 4 }
+    public open fun readInt(): Int {
+        checkCanRead(4)
+        return loadIntAt(readIndex).also { readIndex += 4 }
+    }
 
     /**
      * Reads [Long] from the buffer at [readIndex].
      *
      * @throws IndexOutOfBoundsException if [availableForRead] < 8.
      */
-    public open fun readLong(): Long = loadLongAt(readIndex).also { readIndex += 8 }
+    public open fun readLong(): Long {
+        checkCanRead(8)
+        return loadLongAt(readIndex).also { readIndex += 8 }
+    }
 
     /**
-     * Reads [Float] from the buffer at [readIndex].
-     *
-     * @throws IndexOutOfBoundsException if [availableForRead] < 4.
+     * Read [ByteArray] from current buffer.
      */
-    public open fun readFloat(): Float = loadFloatAt(readIndex).also { readIndex += 4 }
-
-    /**
-     * Reads [Double] from the buffer at [readIndex].
-     *
-     * @throws IndexOutOfBoundsException if [availableForRead] < 8.
-     */
-    public open fun readDouble(): Double = loadDoubleAt(readIndex).also { readIndex += 8 }
+    public abstract fun readArray(): ByteArray
 
     /**
      * Write boolean to the buffer at [writeIndex].
@@ -201,6 +200,7 @@ public abstract class Buffer : Closeable {
      * @throws IndexOutOfBoundsException if [availableForWrite] < 1.
      */
     public open fun writeBoolean(value: Boolean) {
+        checkCanWrite(1)
         storeBooleanAt(writeIndex++, value)
     }
 
@@ -210,6 +210,7 @@ public abstract class Buffer : Closeable {
      * @throws IndexOutOfBoundsException if [availableForWrite] < 1.
      */
     public open fun writeByte(value: Byte) {
+        checkCanWrite(1)
         storeByteAt(writeIndex++, value)
     }
 
@@ -219,6 +220,7 @@ public abstract class Buffer : Closeable {
      * @throws IndexOutOfBoundsException if [availableForWrite] < 2.
      */
     public open fun writeShort(value: Short) {
+        checkCanWrite(2)
         storeShortAt(writeIndex, value)
         writeIndex += 2
     }
@@ -229,6 +231,7 @@ public abstract class Buffer : Closeable {
      * @throws IndexOutOfBoundsException if [availableForWrite] < 4.
      */
     public open fun writeInt(value: Int) {
+        checkCanWrite(4)
         storeIntAt(writeIndex, value)
         writeIndex += 4
     }
@@ -239,27 +242,8 @@ public abstract class Buffer : Closeable {
      * @throws IndexOutOfBoundsException if [availableForWrite] < 8.
      */
     public open fun writeLong(value: Long) {
+        checkCanWrite(8)
         storeLongAt(writeIndex, value)
-        writeIndex += 8
-    }
-
-    /**
-     * Writes [Float] to the buffer at [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [availableForWrite] < 4.
-     */
-    public open fun writeFloat(value: Float) {
-        storeFloatAt(writeIndex, value)
-        writeIndex += 4
-    }
-
-    /**
-     * Writes [Double] to the buffer at [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [availableForWrite] < 8.
-     */
-    public open fun writeDouble(value: Double) {
-        storeDoubleAt(writeIndex, value)
         writeIndex += 8
     }
 
@@ -268,16 +252,19 @@ public abstract class Buffer : Closeable {
      *
      * @return number of copied bytes = `min(availableForWrite, endIndex - startIndex)`
      */
-    public abstract fun writeArray(value: ByteArray, startIndex: Int = 0, endIndex: Int = value.size): Int
+    public open fun writeArray(value: ByteArray, startIndex: Int = 0, endIndex: Int = value.size): Int =
+        storeArrayAt(writeIndex, value, startIndex, endIndex).also { writeIndex += it }
 
     /**
      * Write buffer to the current buffer. The implementation depends on the actual buffer implementation. The [value]
      * will be consumed if it's possible to write all of its bytes.
      */
-    public abstract fun writeBuffer(value: Buffer): Int
+    public open fun writeBuffer(value: Buffer): Int = storeBufferAt(writeIndex, value).also { writeIndex += it }
 
     /**
-     * Copy all bytes from the buffer at [readIndex] between [startPosition] and [endPosition] to the [buffer].
+     * Copy as much as possible bytes from the current buffer to the [destination] between [startIndex] and [endIndex].
+     *
+     * This operation increase [readIndex] by the number of copied bytes.
      *
      * @return Number of copied bytes: `min(availableForRead, endPosition - startPosition)`
      */
