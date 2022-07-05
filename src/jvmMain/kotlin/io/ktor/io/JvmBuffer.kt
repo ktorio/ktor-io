@@ -5,6 +5,8 @@ import java.nio.ByteBuffer
 
 /**
  * The [Buffer] implementation using [ByteBuffer] class on the JVM.
+ *
+ * @constructor creates buffer prepared for reading.
  */
 public class JvmBuffer(
     buffer: ByteBuffer,
@@ -13,8 +15,20 @@ public class JvmBuffer(
 
     /**
      * Creates a new [JvmBuffer] instance with the [ByteBuffer] instance from the [pool].
+     *
+     * The buffer is empty and prepared for write operations.
      */
-    public constructor(pool: ObjectPool<ByteBuffer> = DirectByteBufferPool.Default) : this(pool.borrow(), pool)
+    public constructor(capacity: Int) : this(
+        ByteBuffer.allocateDirect(capacity).limit(0),
+        ByteBufferPool.NoPool
+    )
+
+    /**
+     * Creates a new [JvmBuffer] instance with the [ByteBuffer] instance from the [pool].
+     *
+     * The buffer is empty and prepared for write operations.
+     */
+    public constructor(pool: ObjectPool<ByteBuffer> = ByteBufferPool.Default) : this(pool.borrow(), pool)
 
     /**
      * Provides access to the underlying [ByteBuffer].
@@ -96,7 +110,7 @@ public class JvmBuffer(
 
     override fun storeBufferAt(index: Int, value: Buffer): Int {
         var current = index
-        while (value.canRead) {
+        while (value.isNotEmpty) {
             storeByteAt(current++, value.readByte())
         }
 
