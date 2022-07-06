@@ -148,4 +148,11 @@ public class ByteArrayBuffer(
         writeIndex = availableForRead
         readIndex = 0
     }
+
+    override fun steal(): Buffer {
+        val buffer = ByteArrayBuffer(array, readIndex, writeIndex)
+        readIndex = 0
+        writeIndex = 0
+        return buffer
+    }
 }

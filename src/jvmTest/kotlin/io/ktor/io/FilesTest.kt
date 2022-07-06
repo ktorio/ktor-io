@@ -22,7 +22,7 @@ class FilesTest {
         val destination = FileBytesDestination(fileCopy)
 
         while (source.canRead()) {
-            val buffer = source.read()
+            val buffer = source.receive()
             destination.write(buffer)
             destination.awaitFreeSpace()
             source.awaitContent()
@@ -47,12 +47,12 @@ class FilesTest {
         originalFile.writeText(content)
         val fileCopy = Files.createTempFile("tmp", "copy")
 
-        val source = BufferedBytesSource(FileBytesSource(originalFile))
+        val source = Source(FileBytesSource(originalFile))
         val destination = BufferedBytesDestination(FileBytesDestination(fileCopy), 12 * 1024)
 
         var writeCount = 0
         while (source.canRead()) {
-            val buffer = source.read()
+            val buffer = source.receive()
             val count = destination.write(buffer)
             writeCount += count
 

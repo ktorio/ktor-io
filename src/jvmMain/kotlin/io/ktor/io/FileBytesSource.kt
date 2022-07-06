@@ -19,7 +19,7 @@ public fun FileBytesSource(
     executor: ExecutorService? = null
 ): FileBytesSource = FileBytesSource(AsynchronousFileChannel.open(file, options, executor))
 
-public class FileBytesSource(private val channel: AsynchronousFileChannel) : BytesSource() {
+public class FileBytesSource(private val channel: AsynchronousFileChannel) : RawSource() {
 
     @Volatile
     private var bytesRead = 0L
@@ -39,7 +39,7 @@ public class FileBytesSource(private val channel: AsynchronousFileChannel) : Byt
         return !isClosedForRead
     }
 
-    override fun read(): Buffer {
+    override fun receive(): Buffer {
         closedCause?.let { throw it }
 
         return state.also { state = null } ?: Buffer.Empty

@@ -100,3 +100,12 @@ kotlin {
         }
     }
 }
+
+tasks.koverMergedVerify {
+    rule {
+        name = "Minimal line coverage rate in percent"
+        bound {
+            minValue = 70
+        }
+    }
+}

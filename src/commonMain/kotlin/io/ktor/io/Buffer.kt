@@ -1,5 +1,7 @@
 package io.ktor.io
 
+import kotlin.math.min
+
 /**
  * The [Buffer] class represents a mutable sequence of bytes in memory.
  *
@@ -257,7 +259,19 @@ public interface Buffer : Closeable {
      * @return Number of written bytes: `min(availableForWrite, buffer.availableForRead)`
      * @throws IndexOutOfBoundsException if [index] is greater than [capacity].
      */
-    public fun writeBufferAt(index: Int, value: Buffer): Int
+    public fun writeBufferAt(index: Int, value: Buffer): Int {
+        val availableForWrite = availableForWrite
+        val availableForRead = value.availableForRead
+        if (availableForWrite < availableForRead) {
+            throw IndexOutOfBoundsException("Not enough space available for write: $availableForWrite < $availableForRead")
+        }
+
+        for (i in 0 until availableForRead) {
+            setByteAt(index + i, value.getByteAt(value.readIndex++))
+        }
+
+        return availableForRead
+    }
 
     /**
      * Write buffer to the current buffer. The implementation depends on the actual buffer implementation. The [value]
@@ -281,7 +295,14 @@ public interface Buffer : Closeable {
         destination: ByteArray,
         startIndex: Int = 0,
         endIndex: Int = destination.size
-    ): Int
+    ): Int {
+        val count = min(capacity - index, endIndex - startIndex)
+        for (i in 0 until count) {
+            destination[startIndex + i] = getByteAt(index + count)
+        }
+
+        return count
+    }
 
     /**
      * Copy as much as possible bytes from the current buffer to the [destination] between [startIndex] and [endIndex].
@@ -294,7 +315,15 @@ public interface Buffer : Closeable {
         destination: ByteArray,
         startIndex: Int = 0,
         endIndex: Int = destination.size
-    ): Int
+    ): Int {
+        val count = min(availableForRead, endIndex - startIndex)
+
+        for (index in 0 until count) {
+            destination[index] = readByte()
+        }
+
+        return count
+    }
 
     /**
      * Copy all bytes from [value] between [startPosition] and [endPosition] to the buffer at specific [index].
@@ -309,7 +338,16 @@ public interface Buffer : Closeable {
         value: ByteArray,
         startPosition: Int = 0,
         endPosition: Int = value.size
-    ): Int
+    ): Int {
+        ensureCanWrite(endPosition - startPosition)
+
+        val count = min(capacity - index, endPosition - startPosition)
+        for (currentIndex in 0 until count) {
+            setByteAt(currentIndex + currentIndex, value[startPosition + currentIndex])
+        }
+
+        return currentPosition - startPosition
+    }
 
     /**
      * Copy values from byte array to the buffer at [writeIndex] between [startIndex] and [endIndex].
@@ -326,7 +364,29 @@ public interface Buffer : Closeable {
      * Move all bytes in range [readIndex], [writeIndex] to range [0] and [writeIndex - readIndex] and modifies the
      * [readIndex] and [writeIndex] accordingly.
      */
-    public fun compact()
+    public fun compact() {
+        if (readIndex == 0) return
+        if (readIndex == writeIndex) {
+            readIndex = 0
+            writeIndex = 0
+            return
+        }
+
+        val count = writeIndex - readIndex
+        for (index in 0 until count) {
+            setByteAt(index, getByteAt(readIndex + index))
+        }
+
+        readIndex = 0
+        writeIndex = count
+    }
+
+    /**
+     * Steal all bytes from the current buffer to a copy and return it.
+     *
+     * The [readIndex] and [writeIndex] are reset to 0.
+     */
+    public fun steal(): Buffer
 
     public companion object {
         /**

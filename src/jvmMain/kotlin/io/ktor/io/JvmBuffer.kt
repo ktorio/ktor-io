@@ -162,5 +162,13 @@ public class JvmBuffer(
             buffer.limit(oldLimit)
         }
     }
+
+    override fun steal(): Buffer {
+        val result = JvmBuffer(buffer, pool)
+        buffer = EmptyByteBuffer
+        return result
+    }
 }
+
+private val EmptyByteBuffer = ByteBuffer.allocate(0)
 
