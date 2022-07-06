@@ -9,15 +9,15 @@ public val Buffer.isNotFull: Boolean get() = !isFull
 public val Buffer.availableForRead: Int get() = writeIndex - readIndex
 public val Buffer.availableForWrite: Int get() = capacity - writeIndex
 
-public fun Buffer.reset() {
+public fun Buffer.resetForWrite() {
     readIndex = 0
     writeIndex = 0
 }
 
-public operator fun Buffer.get(index: Int): Byte = loadByteAt(index)
+public operator fun Buffer.get(index: Int): Byte = getByteAt(index)
 
 public operator fun Buffer.set(index: Int, value: Byte) {
-    storeByteAt(index, value)
+    setByteAt(index, value)
 }
 
 /**
@@ -25,7 +25,7 @@ public operator fun Buffer.set(index: Int, value: Byte) {
  *
  * @throws IndexOutOfBoundsException if the [count] is greater [availableForRead].
  */
-public fun Buffer.checkCanRead(count: Int) {
+public fun Buffer.ensureCanRead(count: Int) {
     if (availableForRead < count) {
         throw IndexOutOfBoundsException("Can't read $count bytes. Available: $availableForRead.")
     }
@@ -36,7 +36,7 @@ public fun Buffer.checkCanRead(count: Int) {
  *
  * @throws IndexOutOfBoundsException if the [count] is greater [availableForWrite].
  */
-public fun Buffer.checkCanWrite(count: Int) {
+public fun Buffer.ensureCanWrite(count: Int) {
     if (availableForWrite < count) {
         throw IndexOutOfBoundsException("Can't write $count bytes. Available space: $availableForWrite.")
     }

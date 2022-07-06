@@ -23,10 +23,10 @@ class BufferedBytesSourceTest {
     @Test
     fun testReadReturnsSameBufferIfHasContent() {
         val buffer1 = ByteArrayBuffer(1024)
-        buffer1.writeArray(ByteArray(123) { it.toByte() })
+        buffer1.writeByteArray(ByteArray(123) { it.toByte() })
 
         val buffer2 = ByteArrayBuffer(1024)
-        buffer2.writeArray(ByteArray(123) { it.toByte() })
+        buffer2.writeByteArray(ByteArray(123) { it.toByte() })
 
         val source = TestBytesSource(buffer1, buffer2)
         val buffered = BufferedBytesSource(source)

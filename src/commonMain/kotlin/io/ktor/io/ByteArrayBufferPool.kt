@@ -4,21 +4,17 @@ public class ByteArrayBufferPool(
     capacity: Int = DEFAULT_POOL_CAPACITY,
 ) : DefaultPool<ByteArrayBuffer>(capacity) {
 
-    override fun produceInstance(): ByteArrayBuffer = ByteArrayBuffer(DEFAULT_BUFFER_SIZE)
+    override fun produceInstance(): ByteArrayBuffer = ByteArrayBuffer(ByteArrayPool.Default)
 
     override fun clearInstance(instance: ByteArrayBuffer): ByteArrayBuffer {
-        instance.reset()
+        instance.resetForWrite()
         return instance
     }
 
     public companion object {
         public val Default: ObjectPool<ByteArrayBuffer> = ByteArrayBufferPool()
 
-        public val NoPool: NoPoolImpl<ByteArrayBuffer> = object : NoPoolImpl<ByteArrayBuffer>() {
-            override fun borrow(): ByteArrayBuffer {
-                throw NotImplementedError()
-            }
-        }
+        public val Empty: ObjectPool<ByteArrayBuffer> = ByteArrayBufferPool(capacity = 0)
     }
 }
 
@@ -37,10 +33,6 @@ public class ByteArrayPool(
     public companion object {
         public val Default: ObjectPool<ByteArray> = ByteArrayPool()
 
-        public val NoPool: NoPoolImpl<ByteArray> = object : NoPoolImpl<ByteArray>() {
-            override fun borrow(): ByteArray {
-                throw NotImplementedError()
-            }
-        }
+        public val Empty: ObjectPool<ByteArray> = ByteArrayPool(capacity = 0)
     }
 }

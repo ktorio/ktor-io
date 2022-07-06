@@ -5,8 +5,8 @@ package io.ktor.io
  *
  * @throws IndexOutOfBoundsException if there are not enough bytes in the array.
  */
-public fun ByteArray.loadShortAt(index: Int): Short {
-    checkCanRead(index, 2, size)
+public fun ByteArray.getShortAt(index: Int): Short {
+    ensureCanRead(index, 2, size)
     val high = rawByte(index).shl(8)
     val low = rawByte(index + 1)
     return high.or(low).toShort()
@@ -17,8 +17,8 @@ public fun ByteArray.loadShortAt(index: Int): Short {
  *
  * @throws IndexOutOfBoundsException if there are not enough bytes in the array.
  */
-public fun ByteArray.loadIntAt(index: Int): Int {
-    checkCanRead(index, 4, size)
+public fun ByteArray.getIntAt(index: Int): Int {
+    ensureCanRead(index, 4, size)
     val first = rawByte(index).shl(24)
     val second = rawByte(index + 1).shl(16)
     val third = rawByte(index + 2).shl(8)
@@ -32,8 +32,8 @@ public fun ByteArray.loadIntAt(index: Int): Int {
  *
  * @throws IndexOutOfBoundsException if there are not enough bytes in the array.
  */
-public fun ByteArray.loadLongAt(index: Int): Long {
-    checkCanRead(index, 8, size)
+public fun ByteArray.getLongAt(index: Int): Long {
+    ensureCanRead(index, 8, size)
     val first = rawByte(index).toLong().shl(56)
     val second = rawByte(index + 1).toLong().shl(48)
     val third = rawByte(index + 2).toLong().shl(40)
@@ -51,8 +51,8 @@ public fun ByteArray.loadLongAt(index: Int): Long {
  *
  * @throws IndexOutOfBoundsException if there are not enough bytes in the array.
  */
-public fun ByteArray.storeShortAt(index: Int, value: Short) {
-    checkCanWrite(index, 2, size)
+public fun ByteArray.setShortAt(index: Int, value: Short) {
+    ensureCanWrite(index, 2, size)
 
     val high = value.toInt().and(0xFFFF).shr(8).toByte()
     val low = value.toByte()
@@ -65,8 +65,8 @@ public fun ByteArray.storeShortAt(index: Int, value: Short) {
  *
  * @throws IndexOutOfBoundsException if there are not enough bytes in the array.
  */
-public fun ByteArray.storeIntAt(index: Int, value: Int) {
-    checkCanWrite(index, 4, size)
+public fun ByteArray.setIntAt(index: Int, value: Int) {
+    ensureCanWrite(index, 4, size)
 
     val first = value.shr(24).toByte()
     val second = value.shr(16).toByte()
@@ -84,8 +84,8 @@ public fun ByteArray.storeIntAt(index: Int, value: Int) {
  *
  * @throws IndexOutOfBoundsException if there are not enough bytes in the array.
  */
-public fun ByteArray.storeLongAt(index: Int, value: Long) {
-    checkCanWrite(index, 8, size)
+public fun ByteArray.setLongAt(index: Int, value: Long) {
+    ensureCanWrite(index, 8, size)
 
     val first = value.shr(56).toByte()
     val second = value.shr(48).toByte()
@@ -106,13 +106,13 @@ public fun ByteArray.storeLongAt(index: Int, value: Long) {
     this[index + 7] = eighth
 }
 
-internal fun checkCanRead(index: Int, count: Int, capacity: Int) {
+internal fun ensureCanRead(index: Int, count: Int, capacity: Int) {
     if (index + count > capacity) {
         throw IndexOutOfBoundsException("Can't read $count bytes at index $index from array of size $capacity")
     }
 }
 
-internal fun checkCanWrite(index: Int, count: Int, capacity: Int) {
+internal fun ensureCanWrite(index: Int, count: Int, capacity: Int) {
     if (index + count > capacity) {
         throw IndexOutOfBoundsException("Can't write $count bytes at index $index to array of size $capacity")
     }

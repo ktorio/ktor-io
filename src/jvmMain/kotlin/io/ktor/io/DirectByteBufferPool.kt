@@ -9,7 +9,11 @@ public class ByteBufferPool(
     public val bufferSize: Int = DEFAULT_BUFFER_SIZE
 ) : DefaultPool<ByteBuffer>(capacity) {
 
-    override fun produceInstance(): ByteBuffer = ByteBuffer.allocateDirect(bufferSize)!!
+    override fun produceInstance(): ByteBuffer = if (direct) {
+        ByteBuffer.allocateDirect(bufferSize)!!
+    } else {
+        ByteBuffer.allocate(bufferSize)!!
+    }
 
     override fun clearInstance(instance: ByteBuffer): ByteBuffer = instance.apply {
         clear()
