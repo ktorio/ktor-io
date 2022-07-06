@@ -32,6 +32,6 @@ public class ByteBufferPool(
 
         public val Heap: ObjectPool<ByteBuffer> = ByteBufferPool(direct = false)
 
-        public val NoPool: ObjectPool<ByteBuffer> = ByteBufferPool(capacity = 0)
+        public val Empty: ObjectPool<ByteBuffer> = ByteBufferPool(capacity = 0)
     }
 }
