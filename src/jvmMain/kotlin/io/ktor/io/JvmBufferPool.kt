@@ -10,7 +10,7 @@ public class JvmBufferPool(
     public companion object {
         public val Default: ObjectPool<JvmBuffer> = JvmBufferPool()
 
-        public val NoPool: ObjectPool<JvmBuffer> = object : DefaultPool<JvmBuffer>(capacity = 0) {
+        public val Empty: ObjectPool<JvmBuffer> = object : DefaultPool<JvmBuffer>(capacity = 0) {
             override fun produceInstance(): JvmBuffer = JvmBuffer(ByteBufferPool.NoPool)
         }
     }

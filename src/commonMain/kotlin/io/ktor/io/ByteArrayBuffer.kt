@@ -7,15 +7,25 @@ public const val DEFAULT_BUFFER_SIZE: Int = 1024 * 16
 
 public class ByteArrayBuffer(
     array: ByteArray,
-    private val pool: ObjectPool<ByteArray>
-) : Buffer() {
+    readIndex: Int = 0,
+    writeIndex: Int = array.size,
+    /**
+     * The pool used for allocation of the [array].
+     */
+    public val pool: ObjectPool<ByteArray> = ByteArrayPool.Empty
+) : Buffer {
 
     /**
      * Creates buffer of fixed [capacity].
      */
-    public constructor(capacity: Int) : this(ByteArray(capacity), ByteArrayPool.NoPool)
+    public constructor(capacity: Int) : this(ByteArray(capacity), readIndex = 0, writeIndex = 0)
 
-    public constructor(pool: ObjectPool<ByteArray>) : this(pool.borrow(), pool)
+    public constructor(pool: ObjectPool<ByteArray> = ByteArrayPool.Empty) : this(
+        pool.borrow(),
+        readIndex = 0,
+        writeIndex = 0,
+        pool = pool
+    )
 
     /**
      * Provides access to underlying byte array.
@@ -24,70 +34,86 @@ public class ByteArrayBuffer(
      */
     @Suppress("CanBePrimaryConstructorProperty")
     public var array: ByteArray = array
+        private set
 
     override val capacity: Int
         get() = array.size
 
-    override var readIndex: Int = 0
-    override var writeIndex: Int = 0
+    override var readIndex: Int = readIndex
+        set(value) {
+            if (value < 0 || value > writeIndex) {
+                throw IndexOutOfBoundsException("readIndex must be >= 0")
+            }
+            field = value
+        }
 
-    override fun loadByteAt(index: Int): Byte {
-        checkCanRead(index, 1, writeIndex)
+    override var writeIndex: Int = writeIndex
+        set(value) {
+            if (value < 0 || value > capacity) {
+                throw IndexOutOfBoundsException("Write index $value is out of bounds: $capacity")
+            }
+
+            field = value
+        }
+
+    override fun getByteAt(index: Int): Byte {
+        ensureCanRead(index, 1, writeIndex)
         return array[index]
     }
 
-    override fun loadShortAt(index: Int): Short {
-        checkCanRead(index, 2, writeIndex)
-        return array.loadShortAt(index)
+    override fun getShortAt(index: Int): Short {
+        ensureCanRead(index, 2, writeIndex)
+        return array.getShortAt(index)
     }
 
-    override fun loadIntAt(index: Int): Int {
-        checkCanRead(index, 4, writeIndex)
-        return array.loadIntAt(index)
+    override fun getIntAt(index: Int): Int {
+        ensureCanRead(index, 4, writeIndex)
+        return array.getIntAt(index)
     }
 
-    override fun loadLongAt(index: Int): Long {
-        checkCanRead(index, 8, writeIndex)
-        return array.loadLongAt(index)
+    override fun getLongAt(index: Int): Long {
+        ensureCanRead(index, 8, writeIndex)
+        return array.getLongAt(index)
     }
 
-    override fun storeByteAt(index: Int, value: Byte) {
-        checkCanWrite(index, 1, capacity)
+    override fun setByteAt(index: Int, value: Byte) {
+        ensureCanWrite(index, 1, capacity)
         array[index] = value
     }
 
-    override fun storeShortAt(index: Int, value: Short) {
-        checkCanWrite(index, 2, capacity)
-        array.storeShortAt(index, value)
+    override fun setShortAt(index: Int, value: Short) {
+        ensureCanWrite(index, 2, capacity)
+        array.setShortAt(index, value)
     }
 
-    override fun storeIntAt(index: Int, value: Int) {
-        checkCanWrite(index, 4, capacity)
-        array.storeIntAt(index, value)
+    override fun setIntAt(index: Int, value: Int) {
+        ensureCanWrite(index, 4, capacity)
+        array.setIntAt(index, value)
     }
 
-    override fun storeLongAt(index: Int, value: Long) {
-        checkCanWrite(index, 8, capacity)
-        array.storeLongAt(index, value)
+    override fun setLongAt(index: Int, value: Long) {
+        ensureCanWrite(index, 8, capacity)
+        array.setLongAt(index, value)
     }
 
-    override fun storeBufferAt(index: Int, value: Buffer): Int {
-        return value.copyToArray(array, index, capacity)
+    override fun writeBufferAt(index: Int, value: Buffer): Int {
+        return value.readToByteArray(array, index, capacity)
     }
 
-    override fun storeArrayAt(index: Int, value: ByteArray, startPosition: Int, endPosition: Int): Int {
-        require(startPosition >= 0) { "startPosition($startPosition) must be >= 0" }
-        require(endPosition <= value.size) { "endPosition($endPosition) must be <= value.size(${value.size})" }
-        require(startPosition <= endPosition) { "startPosition($startPosition) must be <= endPosition($endPosition)" }
+    override fun readToByteArrayAt(index: Int, destination: ByteArray, startIndex: Int, endIndex: Int): Int {
+        require(startIndex >= 0) { "startIndex($startIndex) must be >= 0" }
+        require(endIndex <= destination.size) { "endIndex($endIndex) must be <= destination.size(${destination.size})" }
+        require(startIndex <= endIndex) { "startIndex($startIndex) must be <= endIndex($endIndex)" }
+        require(index < capacity) { "index($index) must be < capacity($capacity)" }
 
-        val count = min(capacity - index, endPosition - startPosition)
-        value.copyInto(array, index, startPosition, startPosition + count)
+        val count = min(capacity - index, endIndex - startIndex)
+
+        array.copyInto(destination, startIndex, index, index + count)
+        readIndex += count
         return count
     }
 
-    override fun readArray(): ByteArray = array.sliceArray(readIndex until writeIndex)
-
-    override fun copyToArray(destination: ByteArray, startIndex: Int, endIndex: Int): Int {
+    override fun readToByteArray(destination: ByteArray, startIndex: Int, endIndex: Int): Int {
         require(startIndex >= 0) { "startIndex($startIndex) must be >= 0" }
         require(endIndex <= destination.size) { "endIndex($endIndex) must be <= destination.size(${destination.size})" }
         require(startIndex <= endIndex) { "startIndex($startIndex) must be <= endIndex($endIndex)" }
@@ -96,6 +122,16 @@ public class ByteArrayBuffer(
 
         array.copyInto(destination, startIndex, readIndex, readIndex + count)
         readIndex += count
+        return count
+    }
+
+    override fun writeByteArrayAt(index: Int, value: ByteArray, startPosition: Int, endPosition: Int): Int {
+        require(startPosition >= 0) { "startPosition($startPosition) must be >= 0" }
+        require(endPosition <= value.size) { "endPosition($endPosition) must be <= value.size(${value.size})" }
+        require(startPosition <= endPosition) { "startPosition($startPosition) must be <= endPosition($endPosition)" }
+
+        val count = min(capacity - index, endPosition - startPosition)
+        value.copyInto(array, index, startPosition, startPosition + count)
         return count
     }
 

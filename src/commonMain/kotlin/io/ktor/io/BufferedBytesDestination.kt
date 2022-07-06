@@ -34,7 +34,7 @@ public class BufferedBytesDestination(
             delegate.awaitFreeSpace()
         }
 
-        buffer.reset()
+        buffer.resetForWrite()
         delegate.flush()
     }
 

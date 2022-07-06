@@ -10,8 +10,8 @@ import java.nio.ByteBuffer
  */
 public class JvmBuffer(
     buffer: ByteBuffer,
-    private val pool: ObjectPool<ByteBuffer>
-) : Buffer() {
+    private val pool: ObjectPool<ByteBuffer> = ByteBufferPool.Default
+) : Buffer {
 
     /**
      * Creates a new [JvmBuffer] instance with the [ByteBuffer] instance from the [pool].
@@ -39,6 +39,7 @@ public class JvmBuffer(
      */
     @Suppress("CanBePrimaryConstructorProperty")
     public var buffer: ByteBuffer = buffer
+        private set
 
     override var readIndex: Int
         get() = buffer.position()
@@ -55,7 +56,22 @@ public class JvmBuffer(
     override val capacity: Int
         get() = buffer.capacity()
 
-    override fun copyToArray(destination: ByteArray, startIndex: Int, endIndex: Int): Int {
+    override fun readToByteArrayAt(index: Int, destination: ByteArray, startIndex: Int, endIndex: Int): Int {
+        require(startIndex >= 0) { "startIndex should be non-negative: $startIndex" }
+        require(startIndex <= endIndex) { "startIndex should be less than or equal to endIndex: $startIndex, $endIndex" }
+        require(endIndex <= destination.size) { "endIndex should be less than or equal to destination.size: $endIndex, ${destination.size}" }
+        require(index < capacity) { "index should be less than capacity: $index, $capacity" }
+
+        val count = min(endIndex - startIndex, capacity - index)
+        randomAccess {
+            it.position(index)
+            buffer.get(destination, startIndex, count)
+        }
+
+        return count
+    }
+
+    override fun readToByteArray(destination: ByteArray, startIndex: Int, endIndex: Int): Int {
         require(startIndex >= 0) { "startIndex should be non-negative: $startIndex" }
         require(startIndex <= endIndex) { "startIndex should be less than or equal to endIndex: $startIndex, $endIndex" }
         require(endIndex <= destination.size) { "endIndex should be less than or equal to destination.size: $endIndex, ${destination.size}" }
@@ -76,48 +92,48 @@ public class JvmBuffer(
         buffer.compact()
     }
 
-    override fun loadByteAt(index: Int): Byte = buffer.get(index)
+    override fun getByteAt(index: Int): Byte = buffer.get(index)
 
-    override fun loadShortAt(index: Int): Short = buffer.getShort(index)
+    override fun getShortAt(index: Int): Short = buffer.getShort(index)
 
-    override fun loadIntAt(index: Int): Int = buffer.getInt(index)
+    override fun getIntAt(index: Int): Int = buffer.getInt(index)
 
-    override fun loadLongAt(index: Int): Long = buffer.getLong(index)
+    override fun getLongAt(index: Int): Long = buffer.getLong(index)
 
-    override fun storeByteAt(index: Int, value: Byte) {
+    override fun setByteAt(index: Int, value: Byte) {
         randomAccess {
             it.put(index, value)
         }
     }
 
-    override fun storeShortAt(index: Int, value: Short) {
+    override fun setShortAt(index: Int, value: Short) {
         randomAccess {
             it.putShort(index, value)
         }
     }
 
-    override fun storeIntAt(index: Int, value: Int) {
+    override fun setIntAt(index: Int, value: Int) {
         randomAccess {
             it.putInt(index, value)
         }
     }
 
-    override fun storeLongAt(index: Int, value: Long) {
+    override fun setLongAt(index: Int, value: Long) {
         randomAccess {
             it.putLong(index, value)
         }
     }
 
-    override fun storeBufferAt(index: Int, value: Buffer): Int {
+    override fun writeBufferAt(index: Int, value: Buffer): Int {
         var current = index
         while (value.isNotEmpty) {
-            storeByteAt(current++, value.readByte())
+            setByteAt(current++, value.readByte())
         }
 
         return current - index
     }
 
-    override fun storeArrayAt(index: Int, value: ByteArray, startPosition: Int, endPosition: Int): Int {
+    override fun writeByteArrayAt(index: Int, value: ByteArray, startPosition: Int, endPosition: Int): Int {
         check(index < capacity) { "Index should be less than capacity: $index, $capacity" }
         check(startPosition >= 0) { "startPosition should be non-negative: $startPosition" }
         check(startPosition <= endPosition) { "startPosition should be less than or equal to endPosition: $startPosition, $endPosition" }
@@ -132,12 +148,6 @@ public class JvmBuffer(
         }
 
         return count
-    }
-
-    override fun readArray(): ByteArray {
-        val result = ByteArray(buffer.remaining())
-        copyToArray(result, 0, result.size)
-        return result
     }
 
     private fun randomAccess(block: (ByteBuffer) -> Unit) {
