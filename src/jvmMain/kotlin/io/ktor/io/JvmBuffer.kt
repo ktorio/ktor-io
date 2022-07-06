@@ -20,7 +20,7 @@ public class JvmBuffer(
      */
     public constructor(capacity: Int) : this(
         ByteBuffer.allocateDirect(capacity).limit(0),
-        ByteBufferPool.NoPool
+        ByteBufferPool.Empty
     )
 
     /**
@@ -28,7 +28,7 @@ public class JvmBuffer(
      *
      * The buffer is empty and prepared for write operations.
      */
-    public constructor(pool: ObjectPool<ByteBuffer> = ByteBufferPool.Default) : this(pool.borrow(), pool)
+    public constructor(pool: ObjectPool<ByteBuffer> = ByteBufferPool.Default) : this(pool.borrow().limit(0), pool)
 
     /**
      * Provides access to the underlying [ByteBuffer].

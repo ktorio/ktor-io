@@ -7,7 +7,7 @@ import kotlin.test.assertFailsWith
 
 abstract class BufferTest {
 
-    abstract fun createBuffer(capacity: Int = 1024): Buffer
+    abstract fun createBuffer(): Buffer
 
     @Test
     fun testWriteCanReadByte() {
