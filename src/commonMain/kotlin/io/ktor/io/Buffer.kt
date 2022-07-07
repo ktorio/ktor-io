@@ -111,6 +111,8 @@ public interface Buffer : Closeable {
      * @throws IndexOutOfBoundsException if [index + 2] is greater [capacity].
      */
     public fun getShortAt(index: Int): Short {
+        ensureCanRead(index, 2)
+
         val byte1 = getByteAt(index)
         val byte2 = getByteAt(index + 1)
         return ((byte1.toInt() shl 8) or byte2.toInt()).toShort()
@@ -124,6 +126,8 @@ public interface Buffer : Closeable {
      * @throws IndexOutOfBoundsException if [index + 2] is greater than [capacity].
      */
     public fun setShortAt(index: Int, value: Short) {
+        ensureCanWrite(index, 2)
+
         val rawValue = value.toInt()
         setByteAt(index, (rawValue shr 8).and(0xFF).toByte())
         setByteAt(index, (rawValue and 0xFF).toByte())
@@ -136,6 +140,7 @@ public interface Buffer : Closeable {
      */
     public fun readShort(): Short {
         ensureCanRead(2)
+
         val result = getShortAt(readIndex)
         readIndex += 2
         return result
@@ -148,6 +153,7 @@ public interface Buffer : Closeable {
      */
     public fun writeShort(value: Short) {
         ensureCanWrite(2)
+
         setShortAt(writeIndex, value)
         writeIndex += 2
     }
@@ -160,6 +166,8 @@ public interface Buffer : Closeable {
      * @throws IndexOutOfBoundsException if [index + 4] is greater than [capacity].
      */
     public fun getIntAt(index: Int): Int {
+        ensureCanRead(index, 4)
+
         val byte1 = getByteAt(index)
         val byte2 = getByteAt(index + 1)
         val byte3 = getByteAt(index + 2)
@@ -175,6 +183,8 @@ public interface Buffer : Closeable {
      * @throws IndexOutOfBoundsException if [index + 4] is greater than [capacity].
      */
     public fun setIntAt(index: Int, value: Int) {
+        ensureCanWrite(index, 4)
+
         setByteAt(index, (value shr 24).and(0xFF).toByte())
         setByteAt(index, (value shr 16).and(0xFF).toByte())
         setByteAt(index, (value shr 8).and(0XFF).toByte())
@@ -188,6 +198,7 @@ public interface Buffer : Closeable {
      */
     public fun readInt(): Int {
         ensureCanRead(4)
+
         val result = getIntAt(readIndex)
         readIndex += 4
         return result
@@ -200,6 +211,7 @@ public interface Buffer : Closeable {
      */
     public fun writeInt(value: Int) {
         ensureCanWrite(4)
+
         setIntAt(writeIndex, value)
         writeIndex += 4
     }
@@ -212,6 +224,8 @@ public interface Buffer : Closeable {
      * @throws IndexOutOfBoundsException if [index + 8] is greater than [capacity].
      */
     public fun getLongAt(index: Int): Long {
+        ensureCanRead(index, 8)
+
         val int1 = getIntAt(index)
         val int2 = getIntAt(index + 4)
         return ((int1.toLong() shl 32) or int2.toLong())
@@ -225,6 +239,8 @@ public interface Buffer : Closeable {
      * @throws IndexOutOfBoundsException if [index + 8] is greater than [capacity] or not enough space available.
      */
     public fun setLongAt(index: Int, value: Long) {
+        ensureCanWrite(index, 8)
+
         setIntAt(index, (value shr 32).and(0xFFFFFFFF).toInt())
         setIntAt(index + 4, (value.and(0xFFFFFFFF)).toInt())
     }
@@ -236,6 +252,7 @@ public interface Buffer : Closeable {
      */
     public fun readLong(): Long {
         ensureCanRead(8)
+
         val result = getLongAt(readIndex)
         readIndex += 8
         return result
@@ -248,6 +265,7 @@ public interface Buffer : Closeable {
      */
     public fun writeLong(value: Long) {
         ensureCanWrite(8)
+
         setLongAt(writeIndex, value)
         writeIndex += 8
     }
