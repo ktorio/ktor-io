@@ -1,8 +1,8 @@
 package io.ktor.io
 
 public class ByteArrayBufferPool(
-    public val arrayPool: ObjectPool<ByteArray> = ByteArrayPool.Default,
     capacity: Int = DEFAULT_POOL_CAPACITY,
+    public val arrayPool: ObjectPool<ByteArray> = ByteArrayPool.Default,
 ) : DefaultPool<ByteArrayBuffer>(capacity) {
 
     override fun produceInstance(): ByteArrayBuffer = ByteArrayBuffer(arrayPool)
@@ -16,8 +16,8 @@ public class ByteArrayBufferPool(
         public val Default: ObjectPool<ByteArrayBuffer> = ByteArrayBufferPool()
 
         public val Empty: ObjectPool<ByteArrayBuffer> = ByteArrayBufferPool(
-            arrayPool = ByteArrayPool.Empty,
-            capacity = 0
+            capacity = 0,
+            arrayPool = ByteArrayPool.Empty
         )
     }
 }
