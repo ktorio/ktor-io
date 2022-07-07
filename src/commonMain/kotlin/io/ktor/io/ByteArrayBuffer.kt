@@ -125,13 +125,13 @@ public class ByteArrayBuffer(
         return count
     }
 
-    override fun writeByteArrayAt(index: Int, value: ByteArray, startPosition: Int, endPosition: Int): Int {
-        require(startPosition >= 0) { "startPosition($startPosition) must be >= 0" }
-        require(endPosition <= value.size) { "endPosition($endPosition) must be <= value.size(${value.size})" }
-        require(startPosition <= endPosition) { "startPosition($startPosition) must be <= endPosition($endPosition)" }
+    override fun writeByteArrayAt(index: Int, value: ByteArray, startIndex: Int, endIndex: Int): Int {
+        require(startIndex >= 0) { "startPosition($startIndex) must be >= 0" }
+        require(endIndex <= value.size) { "endPosition($endIndex) must be <= value.size(${value.size})" }
+        require(startIndex <= endIndex) { "startPosition($startIndex) must be <= endPosition($endIndex)" }
 
-        val count = min(capacity - index, endPosition - startPosition)
-        value.copyInto(array, index, startPosition, startPosition + count)
+        val count = min(capacity - index, endIndex - startIndex)
+        value.copyInto(array, index, startIndex, startIndex + count)
         return count
     }
 

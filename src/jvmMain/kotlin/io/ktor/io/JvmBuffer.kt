@@ -33,7 +33,7 @@ public class JvmBuffer(
     /**
      * Provides access to the underlying [ByteBuffer].
      *
-     * The [buffer.position] reflects [readIndex] and [buffer.limit] reflects [writeIndex].
+     * The [buffer.position()] reflects [readIndex] and [buffer.limit()] reflects [writeIndex].
      *
      * All modifications of the [ByteBuffer] is reflected by the [JvmBuffer] itself.
      */
@@ -133,18 +133,18 @@ public class JvmBuffer(
         return current - index
     }
 
-    override fun writeByteArrayAt(index: Int, value: ByteArray, startPosition: Int, endPosition: Int): Int {
+    override fun writeByteArrayAt(index: Int, value: ByteArray, startIndex: Int, endIndex: Int): Int {
         check(index < capacity) { "Index should be less than capacity: $index, $capacity" }
-        check(startPosition >= 0) { "startPosition should be non-negative: $startPosition" }
-        check(startPosition <= endPosition) { "startPosition should be less than or equal to endPosition: $startPosition, $endPosition" }
-        check(endPosition <= value.size) { "endPosition should be less than or equal to value.size: $endPosition, ${value.size}" }
+        check(startIndex >= 0) { "startPosition should be non-negative: $startIndex" }
+        check(startIndex <= endIndex) { "startPosition should be less than or equal to endPosition: $startIndex, $endIndex" }
+        check(endIndex <= value.size) { "endPosition should be less than or equal to value.size: $endIndex, ${value.size}" }
 
 
-        val count = min(endPosition - startPosition, capacity - index)
+        val count = min(endIndex - startIndex, capacity - index)
 
         randomAccess {
             it.position(index)
-            buffer.put(value, startPosition, count)
+            buffer.put(value, startIndex, count)
         }
 
         return count

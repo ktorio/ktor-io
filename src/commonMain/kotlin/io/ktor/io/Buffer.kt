@@ -297,7 +297,7 @@ public interface Buffer : Closeable {
     ): Int
 
     /**
-     * Copy all bytes from [value] between [startPosition] and [endPosition] to the buffer at specific [index].
+     * Copy all bytes from [value] between [startIndex] and [endIndex] to the buffer at specific [index].
      *
      * The operation doesn't modify [readIndex] or [writeIndex].
      *
@@ -307,8 +307,8 @@ public interface Buffer : Closeable {
     public fun writeByteArrayAt(
         index: Int,
         value: ByteArray,
-        startPosition: Int = 0,
-        endPosition: Int = value.size
+        startIndex: Int = 0,
+        endIndex: Int = value.size
     ): Int
 
     /**
