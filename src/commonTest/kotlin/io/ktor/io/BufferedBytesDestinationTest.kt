@@ -12,10 +12,10 @@ class BufferedBytesDestinationTest {
         val buffered = BufferedBytesDestination(destination, 1024)
 
         val buffer1 = ByteArrayBuffer(512)
-        buffer1.write(ByteArray(512) { it.toByte() })
+        buffer1.copyFromByteArray(ByteArray(512) { it.toByte() })
 
         val buffer2 = ByteArrayBuffer(1024)
-        buffer2.write(ByteArray(1024) { it.toByte() })
+        buffer2.copyFromByteArray(ByteArray(1024) { it.toByte() })
 
         buffered.write(buffer1)
         buffered.write(buffer2)
@@ -31,7 +31,7 @@ class BufferedBytesDestinationTest {
         val buffered = BufferedBytesDestination(destination, 1024)
 
         val buffer1 = ByteArrayBuffer(1023)
-        buffer1.write(ByteArray(1023) { it.toByte() })
+        buffer1.copyFromByteArray(ByteArray(1023) { it.toByte() })
 
         buffered.write(buffer1)
         buffered.awaitFreeSpace()
@@ -45,7 +45,7 @@ class BufferedBytesDestinationTest {
         val buffered = BufferedBytesDestination(destination, 1024)
 
         val buffer1 = ByteArrayBuffer(1024)
-        buffer1.write(ByteArray(1024) { it.toByte() })
+        buffer1.copyFromByteArray(ByteArray(1024) { it.toByte() })
 
         buffered.write(buffer1)
         buffered.awaitFreeSpace()
@@ -59,7 +59,7 @@ class BufferedBytesDestinationTest {
         val buffered = BufferedBytesDestination(destination, 1024)
 
         val buffer1 = ByteArrayBuffer(1023)
-        buffer1.write(ByteArray(1023) { it.toByte() })
+        buffer1.copyFromByteArray(ByteArray(1023) { it.toByte() })
 
         buffered.write(buffer1)
         assertEquals(0, destination.writeCount)
@@ -74,7 +74,7 @@ class BufferedBytesDestinationTest {
         val buffered = BufferedBytesDestination(destination, 1024)
 
         val buffer1 = ByteArrayBuffer(1022)
-        buffer1.write(ByteArray(1022) { it.toByte() })
+        buffer1.copyFromByteArray(ByteArray(1022) { it.toByte() })
 
         buffered.write(buffer1)
         buffered.writeByte(1)

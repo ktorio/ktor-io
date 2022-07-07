@@ -10,13 +10,14 @@ class TestBytesDestination : BytesDestination() {
 
     override fun canWrite(): Boolean = closedCause != null
 
-    override fun write(buffer: Buffer) {
-        val copy = ByteArrayBuffer(buffer.readCapacity())
-        val array = ByteArray(buffer.readCapacity())
-        buffer.read(array)
-        copy.write(array)
+    override fun write(buffer: Buffer): Int {
+        val copy = ByteArrayBuffer(buffer.availableForRead)
+        val array = ByteArray(buffer.availableForRead)
+        buffer.copyToByteArray(array)
+        copy.copyFromByteArray(array)
         buffers.add(copy)
         buffer.readIndex = buffer.writeIndex
+        return array.size
     }
 
     override suspend fun flush() = Unit
@@ -30,5 +31,5 @@ class TestBytesDestination : BytesDestination() {
         close(null)
     }
 
-    class ClosedDestinationException() : IOException("closed")
+    class ClosedDestinationException : IOException("closed")
 }

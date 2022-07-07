@@ -14,17 +14,17 @@ public class BufferedBytesSource(
         get() = delegate.closedCause
 
     override fun canRead(): Boolean {
-        return delegate.canRead() || buffer.canRead()
+        return delegate.canRead() || buffer.isNotEmpty
     }
 
     override fun read(): Buffer {
         closedCause?.let { throw it }
 
-        if (buffer.canRead()) {
+        if (buffer.isNotEmpty) {
             return buffer
         }
 
-        buffer.release()
+        buffer.close()
         buffer = delegate.read()
         return buffer
     }
@@ -32,8 +32,7 @@ public class BufferedBytesSource(
     override suspend fun awaitContent() {
         closedCause?.let { throw it }
 
-        if (buffer.canRead()) return
-
+        if (buffer.isNotEmpty) return
         delegate.awaitContent()
     }
 
@@ -44,7 +43,7 @@ public class BufferedBytesSource(
     public suspend fun readByte(): Byte {
         closedCause?.let { throw it }
 
-        while (!buffer.canRead()) {
+        while (buffer.isEmpty) {
             awaitContent()
             read()
         }
@@ -54,7 +53,7 @@ public class BufferedBytesSource(
     public suspend fun readShort(): Short {
         closedCause?.let { throw it }
 
-        if (buffer.readCapacity() >= 2) {
+        if (buffer.availableForRead >= 2) {
             return buffer.readShort()
         }
         return Short(readByte(), readByte())
@@ -63,7 +62,7 @@ public class BufferedBytesSource(
     public suspend fun readInt(): Int {
         closedCause?.let { throw it }
 
-        if (buffer.readCapacity() >= 4) {
+        if (buffer.availableForRead >= 4) {
             return buffer.readInt()
         }
         return Int(readShort(), readShort())
@@ -72,7 +71,7 @@ public class BufferedBytesSource(
     public suspend fun readLong(): Long {
         closedCause?.let { throw it }
 
-        if (buffer.readCapacity() >= 8) {
+        if (buffer.availableForRead >= 8) {
             return buffer.readLong()
         }
         return Long(readInt(), readInt())
