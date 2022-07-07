@@ -13,8 +13,8 @@ class TestBytesDestination : BytesDestination() {
     override fun write(buffer: Buffer): Int {
         val copy = ByteArrayBuffer(buffer.availableForRead)
         val array = ByteArray(buffer.availableForRead)
-        buffer.readToByteArray(array)
-        copy.writeByteArray(array)
+        buffer.copyToByteArray(array)
+        copy.copyFromByteArray(array)
         buffers.add(copy)
         buffer.readIndex = buffer.writeIndex
         return array.size

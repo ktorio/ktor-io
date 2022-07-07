@@ -96,11 +96,11 @@ public class ByteArrayBuffer(
         array.setLongAt(index, value)
     }
 
-    override fun writeBufferAt(index: Int, value: Buffer): Int {
-        return value.readToByteArray(array, index, capacity)
+    override fun copyFromBufferAt(index: Int, value: Buffer): Int {
+        return value.copyToByteArray(array, index, capacity)
     }
 
-    override fun readToByteArrayAt(index: Int, destination: ByteArray, startIndex: Int, endIndex: Int): Int {
+    override fun copyToByteArrayAt(index: Int, destination: ByteArray, startIndex: Int, endIndex: Int): Int {
         require(startIndex >= 0) { "startIndex($startIndex) must be >= 0" }
         require(endIndex <= destination.size) { "endIndex($endIndex) must be <= destination.size(${destination.size})" }
         require(startIndex <= endIndex) { "startIndex($startIndex) must be <= endIndex($endIndex)" }
@@ -113,7 +113,7 @@ public class ByteArrayBuffer(
         return count
     }
 
-    override fun readToByteArray(destination: ByteArray, startIndex: Int, endIndex: Int): Int {
+    override fun copyToByteArray(destination: ByteArray, startIndex: Int, endIndex: Int): Int {
         require(startIndex >= 0) { "startIndex($startIndex) must be >= 0" }
         require(endIndex <= destination.size) { "endIndex($endIndex) must be <= destination.size(${destination.size})" }
         require(startIndex <= endIndex) { "startIndex($startIndex) must be <= endIndex($endIndex)" }
@@ -125,7 +125,7 @@ public class ByteArrayBuffer(
         return count
     }
 
-    override fun writeByteArrayAt(index: Int, value: ByteArray, startIndex: Int, endIndex: Int): Int {
+    override fun copyFromByteArrayAt(index: Int, value: ByteArray, startIndex: Int, endIndex: Int): Int {
         require(startIndex >= 0) { "startPosition($startIndex) must be >= 0" }
         require(endIndex <= value.size) { "endPosition($endIndex) must be <= value.size(${value.size})" }
         require(startIndex <= endIndex) { "startPosition($startIndex) must be <= endPosition($endIndex)" }

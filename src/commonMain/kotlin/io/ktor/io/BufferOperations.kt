@@ -9,7 +9,7 @@ public val Buffer.isNotFull: Boolean get() = !isFull
 public val Buffer.availableForRead: Int get() = writeIndex - readIndex
 public val Buffer.availableForWrite: Int get() = capacity - writeIndex
 
-public fun Buffer.resetForWrite() {
+internal fun Buffer.reset() {
     readIndex = 0
     writeIndex = 0
 }

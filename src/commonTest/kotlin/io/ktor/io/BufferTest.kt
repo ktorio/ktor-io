@@ -87,12 +87,12 @@ abstract class BufferTest {
         buffer.writeIndex = 0
 
         val array = ByteArray(123) { it.toByte() }
-        buffer.writeByteArray(array)
+        buffer.copyFromByteArray(array)
 
         assertEquals(0, buffer.readIndex)
         assertEquals(123, buffer.writeIndex)
 
-        val newArray = ByteArray(123).also { buffer.readToByteArray(it) }
+        val newArray = ByteArray(123).also { buffer.copyToByteArray(it) }
         assertContentEquals(array, newArray)
 
         assertEquals(123, buffer.readIndex)
@@ -156,17 +156,17 @@ abstract class BufferTest {
         val buffer = createBuffer()
 
         val array = ByteArray(123)
-        var count = buffer.readToByteArray(array)
+        var count = buffer.copyToByteArray(array)
         assertEquals(0, count)
 
         buffer.writeIndex = buffer.capacity - 123
         buffer.readIndex = buffer.writeIndex
-        buffer.writeByteArray(array)
+        buffer.copyFromByteArray(array)
 
         val newArray = ByteArray(123)
         assertContentEquals(array, newArray)
         buffer.writeIndex = buffer.capacity - 122
-        count = buffer.writeByteArray(array)
+        count = buffer.copyFromByteArray(array)
         assertEquals(122, count)
     }
 
@@ -182,7 +182,7 @@ abstract class BufferTest {
         buffer.writeLong(9_999_999_999_999)
 
         val array = ByteArray(123) { it.toByte() }
-        buffer.writeByteArray(array)
+        buffer.copyFromByteArray(array)
 
         assertEquals(0, buffer.readIndex)
         assertEquals(138, buffer.writeIndex)
@@ -191,7 +191,7 @@ abstract class BufferTest {
         assertEquals(999, buffer.readShort())
         assertEquals(999_999, buffer.readInt())
         assertEquals(9_999_999_999_999, buffer.readLong())
-        val newArray = ByteArray(123).also { buffer.readToByteArray(it) }
+        val newArray = ByteArray(123).also { buffer.copyToByteArray(it) }
         assertContentEquals(array, newArray)
 
         assertEquals(138, buffer.readIndex)

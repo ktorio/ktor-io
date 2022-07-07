@@ -56,7 +56,7 @@ public class JvmBuffer(
     override val capacity: Int
         get() = buffer.capacity()
 
-    override fun readToByteArrayAt(index: Int, destination: ByteArray, startIndex: Int, endIndex: Int): Int {
+    override fun copyToByteArrayAt(index: Int, destination: ByteArray, startIndex: Int, endIndex: Int): Int {
         require(startIndex >= 0) { "startIndex should be non-negative: $startIndex" }
         require(startIndex <= endIndex) { "startIndex should be less than or equal to endIndex: $startIndex, $endIndex" }
         require(endIndex <= destination.size) { "endIndex should be less than or equal to destination.size: $endIndex, ${destination.size}" }
@@ -71,7 +71,7 @@ public class JvmBuffer(
         return count
     }
 
-    override fun readToByteArray(destination: ByteArray, startIndex: Int, endIndex: Int): Int {
+    override fun copyToByteArray(destination: ByteArray, startIndex: Int, endIndex: Int): Int {
         require(startIndex >= 0) { "startIndex should be non-negative: $startIndex" }
         require(startIndex <= endIndex) { "startIndex should be less than or equal to endIndex: $startIndex, $endIndex" }
         require(endIndex <= destination.size) { "endIndex should be less than or equal to destination.size: $endIndex, ${destination.size}" }
@@ -124,7 +124,7 @@ public class JvmBuffer(
         }
     }
 
-    override fun writeBufferAt(index: Int, value: Buffer): Int {
+    override fun copyFromBufferAt(index: Int, value: Buffer): Int {
         var current = index
         while (value.isNotEmpty) {
             setByteAt(current++, value.readByte())
@@ -133,7 +133,7 @@ public class JvmBuffer(
         return current - index
     }
 
-    override fun writeByteArrayAt(index: Int, value: ByteArray, startIndex: Int, endIndex: Int): Int {
+    override fun copyFromByteArrayAt(index: Int, value: ByteArray, startIndex: Int, endIndex: Int): Int {
         check(index < capacity) { "Index should be less than capacity: $index, $capacity" }
         check(startIndex >= 0) { "startPosition should be non-negative: $startIndex" }
         check(startIndex <= endIndex) { "startPosition should be less than or equal to endPosition: $startIndex, $endIndex" }

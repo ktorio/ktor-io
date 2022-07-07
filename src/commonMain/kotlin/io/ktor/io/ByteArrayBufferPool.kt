@@ -1,13 +1,14 @@
 package io.ktor.io
 
 public class ByteArrayBufferPool(
+    public val arrayPool: ObjectPool<ByteArray> = ByteArrayPool.Default,
     capacity: Int = DEFAULT_POOL_CAPACITY,
 ) : DefaultPool<ByteArrayBuffer>(capacity) {
 
-    override fun produceInstance(): ByteArrayBuffer = ByteArrayBuffer(ByteArrayPool.Default)
+    override fun produceInstance(): ByteArrayBuffer = ByteArrayBuffer(arrayPool)
 
     override fun clearInstance(instance: ByteArrayBuffer): ByteArrayBuffer {
-        instance.resetForWrite()
+        instance.reset()
         return instance
     }
 

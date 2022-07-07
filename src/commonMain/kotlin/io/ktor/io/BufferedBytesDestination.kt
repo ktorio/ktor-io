@@ -23,7 +23,7 @@ public class BufferedBytesDestination(
     override fun write(buffer: Buffer): Int {
         closedCause?.let { throw it }
 
-        return this.buffer.writeBuffer(buffer)
+        return this.buffer.copyFromBuffer(buffer)
     }
 
     override suspend fun flush() {
@@ -34,7 +34,7 @@ public class BufferedBytesDestination(
             delegate.awaitFreeSpace()
         }
 
-        buffer.resetForWrite()
+        buffer.reset()
         delegate.flush()
     }
 
