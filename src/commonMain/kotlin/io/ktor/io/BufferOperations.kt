@@ -32,7 +32,7 @@ public fun Buffer.ensureCanRead(count: Int) {
 }
 
 internal fun Buffer.ensureCanRead(index: Int, count: Int) {
-    if (index + count >= capacity) {
+    if (index + count > capacity) {
         throw IndexOutOfBoundsException("Can't read $count bytes at index $index. Capacity: $capacity.")
     }
 }
@@ -50,7 +50,7 @@ public fun Buffer.ensureCanWrite(count: Int) {
 }
 
 internal fun Buffer.ensureCanWrite(index: Int, count: Int) {
-    if (index + count >= capacity) {
+    if (index + count > capacity) {
         throw IndexOutOfBoundsException("Can't write $count bytes at index $index. Capacity: $capacity.")
     }
 }

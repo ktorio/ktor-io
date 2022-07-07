@@ -115,7 +115,7 @@ public interface Buffer : Closeable {
 
         val byte1 = getByteAt(index)
         val byte2 = getByteAt(index + 1)
-        return ((byte1.toInt() shl 8) or byte2.toInt()).toShort()
+        return Short(byte1, byte2)
     }
 
     /**
@@ -128,9 +128,20 @@ public interface Buffer : Closeable {
     public fun setShortAt(index: Int, value: Short) {
         ensureCanWrite(index, 2)
 
-        val rawValue = value.toInt()
-        setByteAt(index, (rawValue shr 8).and(0xFF).toByte())
-        setByteAt(index, (rawValue and 0xFF).toByte())
+        setByteAt(index, value.highByte)
+        setByteAt(index + 1, value.lowByte)
+    }
+
+    /**
+     * Writes [Short] to the buffer at [writeIndex].
+     *
+     * @throws IndexOutOfBoundsException if [availableForWrite] < 2.
+     */
+    public fun writeShort(value: Short) {
+        ensureCanWrite(2)
+
+        setShortAt(writeIndex, value)
+        writeIndex += 2
     }
 
     /**
@@ -147,18 +158,6 @@ public interface Buffer : Closeable {
     }
 
     /**
-     * Writes [Short] to the buffer at [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [availableForWrite] < 2.
-     */
-    public fun writeShort(value: Short) {
-        ensureCanWrite(2)
-
-        setShortAt(writeIndex, value)
-        writeIndex += 2
-    }
-
-    /**
      * Reads [Int] at specific [index].
      *
      * The operation doesn't modify [readIndex] or [writeIndex].
@@ -168,11 +167,9 @@ public interface Buffer : Closeable {
     public fun getIntAt(index: Int): Int {
         ensureCanRead(index, 4)
 
-        val byte1 = getByteAt(index)
-        val byte2 = getByteAt(index + 1)
-        val byte3 = getByteAt(index + 2)
-        val byte4 = getByteAt(index + 3)
-        return ((byte1.toInt() shl 24) or (byte2.toInt() shl 16) or (byte3.toInt() shl 8) or byte4.toInt())
+        val highShort = getShortAt(index)
+        val lowShort = getShortAt(index + 2)
+        return Int(highShort, lowShort)
     }
 
     /**
@@ -185,10 +182,8 @@ public interface Buffer : Closeable {
     public fun setIntAt(index: Int, value: Int) {
         ensureCanWrite(index, 4)
 
-        setByteAt(index, (value shr 24).and(0xFF).toByte())
-        setByteAt(index, (value shr 16).and(0xFF).toByte())
-        setByteAt(index, (value shr 8).and(0XFF).toByte())
-        setByteAt(index, value.and(0xFF).toByte())
+        setShortAt(index, value.highShort)
+        setShortAt(index + 2, value.lowShort)
     }
 
     /**
@@ -226,9 +221,9 @@ public interface Buffer : Closeable {
     public fun getLongAt(index: Int): Long {
         ensureCanRead(index, 8)
 
-        val int1 = getIntAt(index)
-        val int2 = getIntAt(index + 4)
-        return ((int1.toLong() shl 32) or int2.toLong())
+        val highInt = getIntAt(index)
+        val lowInt = getIntAt(index + 4)
+        return Long(highInt, lowInt)
     }
 
     /**
@@ -241,8 +236,8 @@ public interface Buffer : Closeable {
     public fun setLongAt(index: Int, value: Long) {
         ensureCanWrite(index, 8)
 
-        setIntAt(index, (value shr 32).and(0xFFFFFFFF).toInt())
-        setIntAt(index + 4, (value.and(0xFFFFFFFF)).toInt())
+        setIntAt(index, value.highInt)
+        setIntAt(index + 4, value.lowInt)
     }
 
     /**
