@@ -110,7 +110,7 @@ public class BufferedBytesDestination(
     }
 
     private suspend fun flushIfFull() {
-        if (!buffer.isNotFull) {
+        if (buffer.isFull) {
             flush()
         }
     }

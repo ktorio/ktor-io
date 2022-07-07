@@ -15,7 +15,10 @@ public class ByteArrayBufferPool(
     public companion object {
         public val Default: ObjectPool<ByteArrayBuffer> = ByteArrayBufferPool()
 
-        public val Empty: ObjectPool<ByteArrayBuffer> = ByteArrayBufferPool(capacity = 0)
+        public val Empty: ObjectPool<ByteArrayBuffer> = ByteArrayBufferPool(
+            arrayPool = ByteArrayPool.Empty,
+            capacity = 0
+        )
     }
 }
 

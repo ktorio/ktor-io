@@ -43,7 +43,7 @@ public class BufferedBytesSource(
     public suspend fun readByte(): Byte {
         closedCause?.let { throw it }
 
-        while (!buffer.isNotEmpty) {
+        while (buffer.isEmpty) {
             awaitContent()
             read()
         }

@@ -42,7 +42,7 @@ public class ByteArrayBuffer(
     override var readIndex: Int = readIndex
         set(value) {
             if (value < 0 || value > writeIndex) {
-                throw IndexOutOfBoundsException("readIndex must be >= 0")
+                throw IndexOutOfBoundsException("readIndex($value) must be >= 0 and < writeIndex: $writeIndex")
             }
             field = value
         }
@@ -61,39 +61,9 @@ public class ByteArrayBuffer(
         return array[index]
     }
 
-    override fun getShortAt(index: Int): Short {
-        ensureCanRead(index, 2, writeIndex)
-        return array.getShortAt(index)
-    }
-
-    override fun getIntAt(index: Int): Int {
-        ensureCanRead(index, 4, writeIndex)
-        return array.getIntAt(index)
-    }
-
-    override fun getLongAt(index: Int): Long {
-        ensureCanRead(index, 8, writeIndex)
-        return array.getLongAt(index)
-    }
-
     override fun setByteAt(index: Int, value: Byte) {
         ensureCanWrite(index, 1, capacity)
         array[index] = value
-    }
-
-    override fun setShortAt(index: Int, value: Short) {
-        ensureCanWrite(index, 2, capacity)
-        array.setShortAt(index, value)
-    }
-
-    override fun setIntAt(index: Int, value: Int) {
-        ensureCanWrite(index, 4, capacity)
-        array.setIntAt(index, value)
-    }
-
-    override fun setLongAt(index: Int, value: Long) {
-        ensureCanWrite(index, 8, capacity)
-        array.setLongAt(index, value)
     }
 
     override fun copyFromBufferAt(index: Int, value: Buffer): Int {

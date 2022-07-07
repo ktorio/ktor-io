@@ -29,43 +29,6 @@ public interface Buffer : Closeable {
     public var writeIndex: Int
 
     /**
-     * Reads [Boolean] at specific [index].
-     *
-     * The operation doesn't modify [readIndex] or [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [index + 1] is greater [capacity].
-     */
-    public fun getBooleanAt(index: Int): Boolean = getByteAt(index) != 0.toByte()
-
-    /**
-     * Writes [Boolean] at specific [index].
-     *
-     * The operation doesn't modify [readIndex] or [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [index + 1] is greater than [capacity].
-     */
-    public fun setBooleanAt(index: Int, value: Boolean) {
-        setByteAt(index, if (value) 1.toByte() else 0.toByte())
-    }
-
-    /**
-     * Read boolean from the buffer at [readIndex].
-     *
-     * @throws IndexOutOfBoundsException if [availableForRead] < 1.
-     */
-    public fun readBoolean(): Boolean = getBooleanAt(readIndex++)
-
-    /**
-     * Write boolean to the buffer at [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [availableForWrite] < 1.
-     */
-    public fun writeBoolean(value: Boolean) {
-        ensureCanWrite(1)
-        setBooleanAt(writeIndex++, value)
-    }
-
-    /**
      * Reads [Byte] at specific [index].
      *
      * The operation doesn't modify [readIndex] or [writeIndex].
@@ -101,6 +64,43 @@ public interface Buffer : Closeable {
     public fun writeByte(value: Byte) {
         ensureCanWrite(1)
         setByteAt(writeIndex++, value)
+    }
+
+    /**
+     * Reads [Boolean] at specific [index].
+     *
+     * The operation doesn't modify [readIndex] or [writeIndex].
+     *
+     * @throws IndexOutOfBoundsException if [index + 1] is greater [capacity].
+     */
+    public fun getBooleanAt(index: Int): Boolean = getByteAt(index) != 0.toByte()
+
+    /**
+     * Writes [Boolean] at specific [index].
+     *
+     * The operation doesn't modify [readIndex] or [writeIndex].
+     *
+     * @throws IndexOutOfBoundsException if [index + 1] is greater than [capacity].
+     */
+    public fun setBooleanAt(index: Int, value: Boolean) {
+        setByteAt(index, if (value) 1.toByte() else 0.toByte())
+    }
+
+    /**
+     * Read boolean from the buffer at [readIndex].
+     *
+     * @throws IndexOutOfBoundsException if [availableForRead] < 1.
+     */
+    public fun readBoolean(): Boolean = getBooleanAt(readIndex++)
+
+    /**
+     * Write boolean to the buffer at [writeIndex].
+     *
+     * @throws IndexOutOfBoundsException if [availableForWrite] < 1.
+     */
+    public fun writeBoolean(value: Boolean) {
+        ensureCanWrite(1)
+        setBooleanAt(writeIndex++, value)
     }
 
     /**
@@ -287,8 +287,7 @@ public interface Buffer : Closeable {
     }
 
     /**
-     * Write buffer to the current buffer. The implementation depends on the actual buffer implementation. The [value]
-     * will be consumed if it's possible to write all of its bytes.
+     * Write [value] to the current buffer. The implementation depends on the actual buffer implementation.
      */
     public fun copyFromBuffer(value: Buffer): Int {
         val count = copyFromBufferAt(writeIndex, value)
