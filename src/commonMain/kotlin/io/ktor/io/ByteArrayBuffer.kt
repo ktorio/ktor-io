@@ -4,6 +4,7 @@ import kotlin.math.min
 
 public const val DEFAULT_POOL_CAPACITY: Int = 2000
 public const val DEFAULT_BUFFER_SIZE: Int = 1024 * 16
+private val EMPTY_BYTE_ARRAY = ByteArray(0)
 
 public class ByteArrayBuffer(
     array: ByteArray,
@@ -12,20 +13,13 @@ public class ByteArrayBuffer(
     /**
      * The pool used for allocation of the [array].
      */
-    public val pool: ObjectPool<ByteArray> = ByteArrayPool.Empty
+    public val pool: ObjectPool<ByteArrayBuffer> = ByteArrayBufferPool.Empty
 ) : Buffer {
 
     /**
      * Creates buffer of fixed [capacity].
      */
-    public constructor(capacity: Int) : this(ByteArray(capacity), readIndex = 0, writeIndex = 0)
-
-    public constructor(pool: ObjectPool<ByteArray> = ByteArrayPool.Empty) : this(
-        pool.borrow(),
-        readIndex = 0,
-        writeIndex = 0,
-        pool = pool
-    )
+    public constructor(capacity: Int = DEFAULT_BUFFER_SIZE) : this(ByteArray(capacity), readIndex = 0, writeIndex = 0)
 
     /**
      * Provides access to underlying byte array.
@@ -57,13 +51,21 @@ public class ByteArrayBuffer(
         }
 
     override fun getByteAt(index: Int): Byte {
-        ensureCanRead(index, 1, writeIndex)
+        ensureCanRead(index, 1, capacity)
         return array[index]
     }
 
     override fun setByteAt(index: Int, value: Byte) {
         ensureCanWrite(index, 1, capacity)
         array[index] = value
+    }
+
+    override fun steal(): Buffer {
+        val result = ByteArrayBuffer(array, readIndex, writeIndex, pool)
+        readIndex = 0
+        writeIndex = 0
+        array = EMPTY_BYTE_ARRAY
+        return result
     }
 
     override fun copyFromBufferAt(index: Int, value: Buffer): Int {
@@ -109,7 +111,7 @@ public class ByteArrayBuffer(
      * Returns this buffer back to the pool.
      */
     override fun close() {
-        pool.recycle(array)
+        pool.recycle(this)
     }
 
     override fun compact() {

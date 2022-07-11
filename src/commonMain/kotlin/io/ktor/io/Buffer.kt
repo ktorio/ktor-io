@@ -47,6 +47,11 @@ public interface Buffer : Closeable {
     public fun setByteAt(index: Int, value: Byte)
 
     /**
+     * Steal all bytes from the current buffer to the new instance.
+     */
+    public fun steal(): Buffer
+
+    /**
      * Reads [Byte] from the buffer at [readIndex].
      *
      * @throws IndexOutOfBoundsException if [availableForRead] < 1.
@@ -419,6 +424,8 @@ public interface Buffer : Closeable {
             override fun setByteAt(index: Int, value: Byte) {
                 throw IndexOutOfBoundsException("Can't write to empty buffer")
             }
+
+            override fun steal(): Buffer = this
         }
     }
 }

@@ -48,16 +48,19 @@ public class FileBytesSource(private val channel: AsynchronousFileChannel) : Byt
     override suspend fun awaitContent() {
         closedCause?.let { throw it }
 
-        val buffer = ByteBufferPool.Direct.borrow()
-        val count = channel.read(buffer)
+        val buffer = JvmBufferPool.Default.borrow()
+        buffer.writeIndex = buffer.capacity
+
+        val count = channel.read(buffer.buffer)
         if (count == -1) {
             isClosedForRead = true
-            ByteBufferPool.Direct.recycle(buffer)
+            JvmBufferPool.Default.recycle(buffer)
             return
         }
 
+        buffer.buffer.flip()
         bytesRead += count
-        state = JvmBuffer(buffer.flip(), ByteBufferPool.Direct)
+        state = buffer
     }
 
     override fun cancel(cause: Throwable) {

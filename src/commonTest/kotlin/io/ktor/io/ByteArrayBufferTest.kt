@@ -4,11 +4,11 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ByteArrayWithDefaultPoolTest : BufferTest() {
-    override fun createBuffer(): Buffer = ByteArrayBuffer(ByteArrayPool.Default)
+    override fun createBuffer(): Buffer = ByteArrayBufferPool.Default.borrow()
 }
 
 class ByteArrayWithEmptyPoolTest : BufferTest() {
-    override fun createBuffer(): Buffer = ByteArrayBuffer(ByteArrayPool.Empty)
+    override fun createBuffer(): Buffer = ByteArrayBufferPool.Empty.borrow()
 }
 
 class ByteArrayTest {

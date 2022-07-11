@@ -5,11 +5,11 @@ import java.nio.ByteBuffer
 import kotlin.test.assertEquals
 
 class JvmBufferWithDefaultPoolTest : BufferTest() {
-    override fun createBuffer(): Buffer = JvmBuffer(ByteBufferPool.Default)
+    override fun createBuffer(): Buffer = JvmBufferPool.Default.borrow()
 }
 
 class JvmBufferWithEmptyPoolTest : BufferTest() {
-    override fun createBuffer(): Buffer = JvmBuffer(ByteBufferPool.Empty)
+    override fun createBuffer(): Buffer = JvmBufferPool.Empty.borrow()
 }
 
 class JvmBufferTest {
@@ -27,7 +27,7 @@ class JvmBufferTest {
 
     @Test
     fun testConstructorFromPool() {
-        val buffer = JvmBuffer(ByteBufferPool.Default)
+        val buffer = JvmBufferPool.Default.borrow()
         assertEquals(0, buffer.readIndex)
         assertEquals(0, buffer.writeIndex)
     }

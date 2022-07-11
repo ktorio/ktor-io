@@ -56,8 +56,6 @@ class FilesTest {
             val count = destination.write(buffer)
             writeCount += count
 
-            println("Written $buffer $count/$writeCount/${content.length} bytes")
-
             destination.awaitFreeSpace()
             source.awaitContent()
         }

@@ -107,7 +107,8 @@ abstract class BufferTest {
         buffer.writeIndex = buffer.capacity - 1
         buffer.readIndex = buffer.writeIndex
         buffer.writeByte(1)
-        assertEquals(1, buffer.readByte())
+        val value = buffer.readByte()
+        assertEquals(1, value)
         assertFailsWith<IndexOutOfBoundsException> { buffer.writeByte(2) }
     }
 
@@ -169,7 +170,6 @@ abstract class BufferTest {
         count = buffer.copyFromByteArray(array)
         assertEquals(122, count)
     }
-
 
     @Test
     fun testWriteCanRead() {

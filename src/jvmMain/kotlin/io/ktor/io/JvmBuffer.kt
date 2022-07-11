@@ -3,6 +3,8 @@ package io.ktor.io
 import java.lang.Integer.min
 import java.nio.ByteBuffer
 
+private val EMPTY_BYTE_BUFFER = ByteBuffer.allocate(0)
+
 /**
  * The [Buffer] implementation using [ByteBuffer] class on the JVM.
  *
@@ -10,7 +12,7 @@ import java.nio.ByteBuffer
  */
 public class JvmBuffer(
     buffer: ByteBuffer,
-    private val pool: ObjectPool<ByteBuffer> = ByteBufferPool.Default
+    private val pool: ObjectPool<JvmBuffer> = JvmBufferPool.Default
 ) : Buffer {
 
     /**
@@ -20,15 +22,8 @@ public class JvmBuffer(
      */
     public constructor(capacity: Int) : this(
         ByteBuffer.allocateDirect(capacity).limit(0),
-        ByteBufferPool.Empty
+        JvmBufferPool.Empty
     )
-
-    /**
-     * Creates a new [JvmBuffer] instance with the [ByteBuffer] instance from the [pool].
-     *
-     * The buffer is empty and prepared for write operations.
-     */
-    public constructor(pool: ObjectPool<ByteBuffer> = ByteBufferPool.Default) : this(pool.borrow().limit(0), pool)
 
     /**
      * Provides access to the underlying [ByteBuffer].
@@ -85,7 +80,7 @@ public class JvmBuffer(
      * Return the underlying buffer to the pool.
      */
     override fun close() {
-        pool.recycle(buffer)
+        pool.recycle(this)
     }
 
     override fun compact() {
@@ -139,7 +134,6 @@ public class JvmBuffer(
         check(startIndex <= endIndex) { "startPosition should be less than or equal to endPosition: $startIndex, $endIndex" }
         check(endIndex <= value.size) { "endPosition should be less than or equal to value.size: $endIndex, ${value.size}" }
 
-
         val count = min(endIndex - startIndex, capacity - index)
 
         randomAccess {
@@ -161,6 +155,12 @@ public class JvmBuffer(
             buffer.position(oldPosition)
             buffer.limit(oldLimit)
         }
+    }
+
+    override fun steal(): Buffer {
+        val buffer = this.buffer
+        this.buffer = EMPTY_BYTE_BUFFER
+        return JvmBuffer(buffer, pool)
     }
 }
 
