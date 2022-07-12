@@ -28,7 +28,7 @@ class CompositeBufferTest {
 
         assertEquals(0, buffer.readIndex)
         assertEquals(0, buffer.writeIndex)
-        assertEquals(2 * DEFAULT_BUFFER_SIZE, buffer.capacity)
+        assertEquals(DEFAULT_BUFFER_SIZE, buffer.capacity)
     }
 
     @Test
@@ -45,10 +45,15 @@ class CompositeBufferTest {
     fun testWriteShortOnBorder() {
         val buffer = CompositeBuffer().apply {
             appendBuffer(ByteArrayBuffer(1))
+            writeByte(0)
             appendBuffer(ByteArrayBuffer(1))
+            writeByte(0)
+
+            writeIndex = 0
+            writeShort(42)
         }
 
-        buffer.writeShort(42)
+        assertEquals(2, buffer.buffers.size)
         assertEquals(42, buffer.readShort())
     }
 
@@ -56,10 +61,14 @@ class CompositeBufferTest {
     fun testSetShortOnBorder() {
         val buffer = CompositeBuffer().apply {
             appendBuffer(ByteArrayBuffer(1))
+            writeByte(42)
             appendBuffer(ByteArrayBuffer(1))
+            writeByte(42)
+
+            setShortAt(0, -42)
         }
 
-        buffer.setShortAt(0, 42)
-        assertEquals(42, buffer.readShort())
+        assertEquals(2, buffer.buffers.size)
+        assertEquals(-42, buffer.readShort())
     }
 }

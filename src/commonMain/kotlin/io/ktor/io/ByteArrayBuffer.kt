@@ -13,7 +13,7 @@ public class ByteArrayBuffer(
     /**
      * The pool used for allocation of the [array].
      */
-    public val pool: ObjectPool<ByteArrayBuffer> = ByteArrayBufferPool.Empty
+    public val pool: ObjectPool<Buffer> = ByteArrayBufferPool.Empty
 ) : Buffer {
 
     /**
@@ -51,12 +51,12 @@ public class ByteArrayBuffer(
         }
 
     override fun getByteAt(index: Int): Byte {
-        ensureCanRead(index, 1, capacity)
+        checkCanRead(index, 1, capacity)
         return array[index]
     }
 
     override fun setByteAt(index: Int, value: Byte) {
-        ensureCanWrite(index, 1, capacity)
+        checkCanWrite(index, 1, capacity)
         array[index] = value
     }
 

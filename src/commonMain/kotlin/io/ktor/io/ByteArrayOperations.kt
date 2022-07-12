@@ -6,7 +6,7 @@ package io.ktor.io
  * @throws IndexOutOfBoundsException if there are not enough bytes in the array.
  */
 public fun ByteArray.getShortAt(index: Int): Short {
-    ensureCanRead(index, 2, size)
+    checkCanRead(index, 2, size)
     return Short(this[index], this[index + 1])
 }
 
@@ -16,7 +16,7 @@ public fun ByteArray.getShortAt(index: Int): Short {
  * @throws IndexOutOfBoundsException if there are not enough bytes in the array.
  */
 public fun ByteArray.getIntAt(index: Int): Int {
-    ensureCanRead(index, 4, size)
+    checkCanRead(index, 4, size)
 
     return Int(getShortAt(index), getShortAt(index + 2))
 }
@@ -27,7 +27,7 @@ public fun ByteArray.getIntAt(index: Int): Int {
  * @throws IndexOutOfBoundsException if there are not enough bytes in the array.
  */
 public fun ByteArray.getLongAt(index: Int): Long {
-    ensureCanRead(index, 8, size)
+    checkCanRead(index, 8, size)
     return Long(getIntAt(index), getIntAt(index + 4))
 }
 
@@ -37,7 +37,7 @@ public fun ByteArray.getLongAt(index: Int): Long {
  * @throws IndexOutOfBoundsException if there are not enough bytes in the array.
  */
 public fun ByteArray.setShortAt(index: Int, value: Short): ByteArray {
-    ensureCanWrite(index, 2, size)
+    checkCanWrite(index, 2, size)
 
     this[index] = value.highByte
     this[index + 1] = value.lowByte
@@ -51,7 +51,7 @@ public fun ByteArray.setShortAt(index: Int, value: Short): ByteArray {
  * @throws IndexOutOfBoundsException if there are not enough bytes in the array.
  */
 public fun ByteArray.setIntAt(index: Int, value: Int): ByteArray {
-    ensureCanWrite(index, 4, size)
+    checkCanWrite(index, 4, size)
 
     setShortAt(index, value.highShort)
     setShortAt(index + 2, value.lowShort)
@@ -65,7 +65,7 @@ public fun ByteArray.setIntAt(index: Int, value: Int): ByteArray {
  * @throws IndexOutOfBoundsException if there are not enough bytes in the array.
  */
 public fun ByteArray.setLongAt(index: Int, value: Long): ByteArray {
-    ensureCanWrite(index, 8, size)
+    checkCanWrite(index, 8, size)
 
     setIntAt(index, value.highInt)
     setIntAt(index + 4, value.lowInt)
@@ -73,13 +73,13 @@ public fun ByteArray.setLongAt(index: Int, value: Long): ByteArray {
     return this
 }
 
-internal fun ensureCanRead(index: Int, count: Int, capacity: Int) {
+internal fun checkCanRead(index: Int, count: Int, capacity: Int) {
     if (index + count > capacity) {
         throw IndexOutOfBoundsException("Can't read $count bytes at index $index from array of size $capacity")
     }
 }
 
-internal fun ensureCanWrite(index: Int, count: Int, capacity: Int) {
+internal fun checkCanWrite(index: Int, count: Int, capacity: Int) {
     if (index + count > capacity) {
         throw IndexOutOfBoundsException("Can't write $count bytes at index $index to array of size $capacity")
     }

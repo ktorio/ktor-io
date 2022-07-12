@@ -9,10 +9,20 @@ package io.ktor.io
 public open class CompositeBuffer(
     buffers: List<Buffer> = emptyList(),
     override var readIndex: Int = 0,
-    override var writeIndex: Int = buffers.sumOf { it.availableForRead }
+    override var writeIndex: Int = buffers.sumOf { it.availableForRead },
+    public val pool: ObjectPool<Buffer> = ByteArrayBufferPool.Default
 ) : Buffer {
-    private val _buffers: MutableList<Buffer> = mutableListOf<Buffer>().apply {
-        addAll(buffers)
+    private val _buffers: ArrayList<Buffer> = ArrayList(buffers.size)
+
+    override var capacity: Int = 0
+        protected set
+
+    init {
+        buffers.forEach {
+            val buffer = it.steal()
+            capacity += buffer.availableForRead
+            _buffers.add(buffer)
+        }
     }
 
     /**
@@ -20,112 +30,168 @@ public open class CompositeBuffer(
      */
     public val buffers: List<Buffer> get() = _buffers
 
-    override var capacity: Int = buffers.sumOf { it.availableForRead } + (buffers.lastOrNull()?.availableForWrite ?: 0)
-        protected set
-
     override fun getByteAt(index: Int): Byte {
-        ensureCanRead(index, 1)
-        val buffer = bufferForIndex(index)
-        val bufferIndex = indexInBuffer(index)
-        return buffer.getByteAt(bufferIndex)
+        checkCanRead(index, 1)
+
+        return locate(index) { offset, _ ->
+            getByteAt(offset)
+        }
     }
 
     override fun setByteAt(index: Int, value: Byte) {
-        ensureCanWrite(index, 1)
+        checkCanWrite(index, 1)
 
-        val buffer = bufferForIndex(index)
-        val indexInBuffer = indexInBuffer(index)
-        buffer.setByteAt(indexInBuffer, value)
+        locate(index) { offset, _ ->
+            setByteAt(offset, value)
+        }
+    }
+
+    override fun getShortAt(index: Int): Short {
+        checkCanRead(index, 2)
+
+        locate(index) { offset, capacity ->
+            if (offset + 2 < capacity) return getShortAt(offset)
+        }
+
+        return Short(getByteAt(index), getByteAt(index + 1))
     }
 
     override fun setShortAt(index: Int, value: Short) {
-        val buffer = bufferForIndex(index)
-        if (currentCapacity() >= 2) {
-            buffer.setShortAt(indexInBuffer(index), value)
-            return
+        checkCanWrite(index, 2)
+
+        locate(index) { offset, capacity ->
+            if (offset + 2 < capacity) {
+                return setShortAt(offset, value)
+            }
         }
 
         setByteAt(index, value.highByte)
         setByteAt(index + 1, value.lowByte)
     }
 
-    override fun getShortAt(index: Int): Short {
-        val buffer = bufferForIndex(index)
-        if (currentCapacity() >= 2) {
-            return buffer.getShortAt(indexInBuffer(index))
+    override fun getIntAt(index: Int): Int {
+        checkCanRead(index, 4)
+
+        locate(index) { offset, capacity ->
+            if (offset + 4 < capacity) return getIntAt(offset)
         }
 
-        val highByte = getByteAt(index)
-        val lowByte = getByteAt(index + 1)
-        return Short(highByte, lowByte)
+        return Int(getShortAt(index), getShortAt(index + 2))
     }
 
-    override fun steal(): Buffer = CompositeBuffer(
-        buffers.map { it.steal() },
-        readIndex,
-        writeIndex
-    )
+    override fun setIntAt(index: Int, value: Int) {
+        checkCanWrite(index, 4)
+
+        locate(index) { offset, capacity ->
+            if (offset + 4 < capacity) return setIntAt(offset, value)
+        }
+
+        setShortAt(index, value.highShort)
+        setShortAt(index + 2, value.lowShort)
+    }
+
+    override fun getLongAt(index: Int): Long {
+        checkCanRead(index, 8)
+
+        locate(index) { offset, capacity ->
+            if (offset + 8 < capacity) return getLongAt(offset)
+        }
+
+        return Long(getIntAt(index), getIntAt(index + 4))
+    }
+
+    override fun setLongAt(index: Int, value: Long) {
+        checkCanWrite(index, 8)
+
+        locate(index) { offset, capacity ->
+            if (offset + 8 < capacity) {
+                setLongAt(offset, value)
+                return
+            }
+        }
+
+        setIntAt(index, value.highInt)
+        setIntAt(index + 4, value.lowInt)
+    }
+
+    override fun steal(): Buffer {
+        commitWriteIndex()
+
+        return CompositeBuffer(
+            _buffers,
+            readIndex,
+            writeIndex,
+            pool
+        )
+    }
 
     /**
      * Appends a [Buffer] to the end of the [CompositeBuffer].
      */
     public open fun appendBuffer(buffer: Buffer) {
-        if (buffer.availableForRead == 0) {
-            _buffers.add(buffer)
-            capacity += buffer.capacity
-            return
-        }
-
-        val unusedCapacity = _buffers.lastOrNull()?.availableForWrite ?: 0
-        val newBufferCapacity = buffer.capacity - buffer.readIndex
-        val capacityChange = newBufferCapacity - unusedCapacity
-
+        commitWriteIndex()
         _buffers.add(buffer)
-        capacity += capacityChange
+        capacity += buffer.capacity - buffer.readIndex
     }
 
-    private var bufferIndex = 0
-    private var bufferOffset = 0
+    /**
+     * Append a new [Buffer] from pool if the [availableForWrite] less than size.o
+     *
+     * @throws IllegalArgumentException if the [size] is > than [availableForWrite] in the allocated [Buffer].
+     */
+    public open fun ensureCanWrite(size: Int) {
+        if (availableForWrite >= size) return
+        val newBuffer = pool.borrow()
 
-    private fun bufferForIndex(index: Int): Buffer {
-        while (index >= bufferOffset + currentCapacity()) {
-            nextBuffer()
+        require(newBuffer.availableForWrite < size) {
+            val available = newBuffer.availableForWrite
+            pool.recycle(newBuffer)
+            "Requested size is too big: $size, available $available."
         }
 
-        while (index < bufferOffset) {
-            previousBuffer()
-        }
-
-        return _buffers[bufferIndex]
-    }
-
-    private fun indexInBuffer(index: Int): Int = index - bufferOffset + buffers[bufferIndex].readIndex
-
-    private fun nextBuffer() {
-        if (bufferIndex == buffers.lastIndex) return
-
-        bufferOffset += buffers[bufferIndex].availableForRead
-        bufferIndex++
-    }
-
-    private fun previousBuffer() {
-        if (bufferIndex == 0) return
-
-        bufferIndex--
-        bufferOffset -= buffers[bufferIndex].availableForRead
-    }
-
-    private fun currentCapacity(): Int {
-        val buffer = buffers[bufferIndex]
-
-        return if (bufferIndex == buffers.lastIndex) {
-            buffer.capacity - buffer.readIndex
-        } else {
-            buffer.availableForRead
-        }
+        appendBuffer(newBuffer)
     }
 
     override fun close() {
         buffers.forEach { it.close() }
+    }
+
+    private inline fun <T> locate(index: Int, block: Buffer.(index: Int, capacity: Int) -> T): T {
+        var bufferIndex = 0
+        var bufferOffset = 0
+
+        while (bufferIndex < _buffers.size - 1) {
+            val buffer = _buffers[bufferIndex]
+            val bufferSize = buffer.availableForRead
+            if (bufferOffset + bufferSize > index) {
+                return block(buffer, buffer.readIndex + index - bufferOffset, buffer.writeIndex)
+            }
+
+            bufferIndex++
+            bufferOffset += bufferSize
+        }
+
+        val last = _buffers.last()
+        val readIndex = last.readIndex + index - bufferOffset
+
+        return block(last, readIndex, last.capacity)
+    }
+
+    /**
+     * Set valid index in the [buffers.last()] buffer.
+     */
+    private fun commitWriteIndex() {
+        if (buffers.isEmpty()) return
+
+        val last = buffers.last()
+
+        val offset = buffers.sumOf { it.availableForRead }
+        val difference = writeIndex - offset
+
+        if (difference > 0) {
+            last.writeIndex = difference
+        }
+
+        capacity -= last.capacity - writeIndex
     }
 }

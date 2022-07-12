@@ -25,13 +25,13 @@ public operator fun Buffer.set(index: Int, value: Byte) {
  *
  * @throws IndexOutOfBoundsException if the [count] is greater [availableForRead].
  */
-public fun Buffer.ensureCanRead(count: Int) {
+public fun Buffer.checkCanRead(count: Int) {
     if (availableForRead < count) {
         throw IndexOutOfBoundsException("Can't read $count bytes. Available: $availableForRead.")
     }
 }
 
-internal fun Buffer.ensureCanRead(index: Int, count: Int) {
+internal fun Buffer.checkCanRead(index: Int, count: Int) {
     if (index < 0) {
         throw IndexOutOfBoundsException("Index must be non-negative")
     }
@@ -46,13 +46,13 @@ internal fun Buffer.ensureCanRead(index: Int, count: Int) {
  *
  * @throws IndexOutOfBoundsException if the [count] is greater [availableForWrite].
  */
-public fun Buffer.ensureCanWrite(count: Int) {
+public fun Buffer.checkCanWrite(count: Int) {
     if (availableForWrite < count) {
         throw IndexOutOfBoundsException("Can't write $count bytes. Available space: $availableForWrite.")
     }
 }
 
-internal fun Buffer.ensureCanWrite(index: Int, count: Int) {
+internal fun Buffer.checkCanWrite(index: Int, count: Int) {
     if (index < 0) {
         throw IndexOutOfBoundsException("Index must be non-negative")
     }
