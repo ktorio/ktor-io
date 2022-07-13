@@ -13,7 +13,7 @@ public class ByteArrayBuffer(
     /**
      * The pool used for allocation of the [array].
      */
-    public val pool: ObjectPool<Buffer> = ByteArrayBufferPool.Empty
+    public val pool: ObjectPool<ByteArrayBuffer> = ByteArrayBufferPool.Empty
 ) : Buffer {
 
     /**

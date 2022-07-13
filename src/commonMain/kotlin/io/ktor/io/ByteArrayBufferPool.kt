@@ -3,27 +3,26 @@ package io.ktor.io
 public class ByteArrayBufferPool(
     capacity: Int = DEFAULT_POOL_CAPACITY,
     public val arrayPool: ObjectPool<ByteArray> = ByteArrayPool.Default
-) : DefaultPool<Buffer>(capacity) {
+) : DefaultPool<ByteArrayBuffer>(capacity) {
 
-    override fun produceInstance(): Buffer = ByteArrayBuffer(arrayPool.borrow(), pool = this).apply {
+    override fun produceInstance(): ByteArrayBuffer = ByteArrayBuffer(arrayPool.borrow(), pool = this).apply {
         readIndex = 0
         writeIndex = 0
     }
 
-    override fun disposeInstance(instance: Buffer) {
-        check(instance is ByteArrayBuffer)
+    override fun disposeInstance(instance: ByteArrayBuffer) {
         arrayPool.recycle(instance.array)
     }
 
-    override fun clearInstance(instance: Buffer): Buffer {
+    override fun clearInstance(instance: ByteArrayBuffer): ByteArrayBuffer {
         instance.reset()
         return instance
     }
 
     public companion object {
-        public val Default: ObjectPool<Buffer> = ByteArrayBufferPool()
+        public val Default: ObjectPool<ByteArrayBuffer> = ByteArrayBufferPool()
 
-        public val Empty: ObjectPool<Buffer> = ByteArrayBufferPool(
+        public val Empty: ObjectPool<ByteArrayBuffer> = ByteArrayBufferPool(
             capacity = 0,
             arrayPool = ByteArrayPool.Empty
         )

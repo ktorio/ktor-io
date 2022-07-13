@@ -1,9 +1,6 @@
 package io.ktor.io
 
-import kotlin.test.Test
-import kotlin.test.assertContentEquals
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import kotlin.test.*
 
 abstract class BufferTest {
 
@@ -25,6 +22,21 @@ abstract class BufferTest {
 
         assertEquals(2, buffer.readIndex)
         assertEquals(2, buffer.writeIndex)
+    }
+
+    @Test
+    fun testReadWriteBoolean() {
+        createBuffer().apply {
+            writeBoolean(true)
+            writeBoolean(false)
+            writeBoolean(false)
+            writeBoolean(true)
+
+            assertTrue(readBoolean())
+            assertFalse(readBoolean())
+            assertFalse(readBoolean())
+            assertTrue(readBoolean())
+        }
     }
 
     @Test
@@ -196,5 +208,26 @@ abstract class BufferTest {
 
         assertEquals(138, buffer.readIndex)
         assertEquals(138, buffer.writeIndex)
+    }
+
+    @Test
+    fun testCompact() {
+        val buffer = createBuffer()
+
+        val written = DEFAULT_BUFFER_SIZE - 1
+        repeat(written) {
+            buffer.writeByte(42)
+        }
+
+        val consumed = (DEFAULT_BUFFER_SIZE / 2).toInt()
+        buffer.copyToByteArray(ByteArray(consumed))
+
+        assertEquals(consumed, buffer.readIndex)
+        assertEquals(written, buffer.writeIndex)
+
+        buffer.compact()
+
+        assertEquals(0, buffer.readIndex)
+        assertEquals(written - consumed, buffer.writeIndex)
     }
 }

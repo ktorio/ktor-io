@@ -10,7 +10,7 @@ public open class CompositeBuffer(
     buffers: List<Buffer> = emptyList(),
     override var readIndex: Int = 0,
     override var writeIndex: Int = buffers.sumOf { it.availableForRead },
-    public val pool: ObjectPool<Buffer> = ByteArrayBufferPool.Default
+    public val pool: ObjectPool<out Buffer> = ByteArrayBufferPool.Default
 ) : Buffer {
     private val _buffers: ArrayList<Buffer> = ArrayList(buffers.size)
 
@@ -145,7 +145,7 @@ public open class CompositeBuffer(
 
         require(newBuffer.availableForWrite < size) {
             val available = newBuffer.availableForWrite
-            pool.recycle(newBuffer)
+            newBuffer.close()
             "Requested size is too big: $size, available $available."
         }
 

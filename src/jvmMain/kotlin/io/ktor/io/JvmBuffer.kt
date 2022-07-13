@@ -12,7 +12,7 @@ private val EMPTY_BYTE_BUFFER = ByteBuffer.allocate(0)
  */
 public class JvmBuffer(
     buffer: ByteBuffer,
-    private val pool: ObjectPool<Buffer> = JvmBufferPool.Default
+    private val pool: ObjectPool<JvmBuffer> = JvmBufferPool.Default
 ) : Buffer {
 
     /**
