@@ -58,6 +58,7 @@ kotlin {
     mingwX64()
     linuxX64()
     macosX64()
+    macosArm64()
 
     explicitApi()
 
@@ -90,12 +91,14 @@ kotlin {
         val linuxX64Test by getting
         val macosX64Main by getting
         val macosX64Test by getting
+        val macosArm64Main by getting
+        val macosArm64Test by getting
 
-        listOf(linuxX64Main, mingwX64Main, macosX64Main).forEach {
+        listOf(linuxX64Main, mingwX64Main, macosX64Main, macosArm64Main).forEach {
             it.dependsOn(nativeMain)
         }
 
-        listOf(linuxX64Test, mingwX64Test, macosX64Test).forEach {
+        listOf(linuxX64Test, mingwX64Test, macosX64Test, macosArm64Test).forEach {
             it.dependsOn(nativeTest)
         }
     }
