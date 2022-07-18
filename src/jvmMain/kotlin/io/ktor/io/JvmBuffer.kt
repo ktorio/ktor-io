@@ -1,34 +1,40 @@
 package io.ktor.io
 
-import java.lang.Integer.min
+import io.ktor.io.internals.*
 import java.nio.ByteBuffer
+import kotlin.math.*
 
 /**
  * The [Buffer] implementation using [ByteBuffer] class on the JVM.
  *
  * @constructor creates buffer prepared for reading.
  */
-public class JvmBuffer(
-    buffer: ByteBuffer,
-    private val pool: ObjectPool<ByteBuffer> = ByteBufferPool.Default
+public class JvmBuffer internal constructor(
+    view: ByteBuffer,
+    private val referenceCounter: ReferenceCounter,
+    private val pool: ObjectPool<JvmBuffer>,
+    private val origin: JvmBuffer? = null
 ) : Buffer {
 
-    /**
-     * Creates a new [JvmBuffer] instance with the [ByteBuffer] instance from the [pool].
-     *
-     * The buffer is empty and prepared for write operations.
-     */
-    public constructor(capacity: Int) : this(
-        ByteBuffer.allocateDirect(capacity).limit(0),
-        ByteBufferPool.Empty
-    )
+    public constructor(
+        buffer: ByteBuffer,
+        pool: ObjectPool<JvmBuffer> = JvmBufferPool.Default
+    ) : this(buffer, AtomicReferenceCounter(), pool)
 
     /**
      * Creates a new [JvmBuffer] instance with the [ByteBuffer] instance from the [pool].
      *
      * The buffer is empty and prepared for write operations.
      */
-    public constructor(pool: ObjectPool<ByteBuffer> = ByteBufferPool.Default) : this(pool.borrow().limit(0), pool)
+    public constructor(capacity: Int = DEFAULT_BUFFER_SIZE) : this(
+        ByteBuffer.allocateDirect(capacity).limit(0),
+        referenceCounter = EmptyReferenceCounter,
+        pool = JvmBufferPool.Empty
+    )
+
+    init {
+        referenceCounter.retain()
+    }
 
     /**
      * Provides access to the underlying [ByteBuffer].
@@ -38,23 +44,23 @@ public class JvmBuffer(
      * All modifications of the [ByteBuffer] is reflected by the [JvmBuffer] itself.
      */
     @Suppress("CanBePrimaryConstructorProperty")
-    public var buffer: ByteBuffer = buffer
+    public var raw: ByteBuffer = view
         private set
 
     override var readIndex: Int
-        get() = buffer.position()
+        get() = raw.position()
         set(value) {
-            buffer.position(value)
+            raw.position(value)
         }
 
     override var writeIndex: Int
-        get() = buffer.limit()
+        get() = raw.limit()
         set(value) {
-            buffer.limit(value)
+            raw.limit(value)
         }
 
     override val capacity: Int
-        get() = buffer.capacity()
+        get() = raw.capacity()
 
     override fun copyToByteArrayAt(index: Int, destination: ByteArray, startIndex: Int, endIndex: Int): Int {
         require(startIndex >= 0) { "startIndex should be non-negative: $startIndex" }
@@ -65,7 +71,7 @@ public class JvmBuffer(
         val count = min(endIndex - startIndex, capacity - index)
         randomAccess {
             it.position(index)
-            buffer.get(destination, startIndex, count)
+            raw.get(destination, startIndex, count)
         }
 
         return count
@@ -76,8 +82,8 @@ public class JvmBuffer(
         require(startIndex <= endIndex) { "startIndex should be less than or equal to endIndex: $startIndex, $endIndex" }
         require(endIndex <= destination.size) { "endIndex should be less than or equal to destination.size: $endIndex, ${destination.size}" }
 
-        val count = min(endIndex - startIndex, buffer.remaining())
-        buffer.get(destination, startIndex, count)
+        val count = min(endIndex - startIndex, raw.remaining())
+        raw.get(destination, startIndex, count)
         return count
     }
 
@@ -85,20 +91,22 @@ public class JvmBuffer(
      * Return the underlying buffer to the pool.
      */
     override fun close() {
-        pool.recycle(buffer)
+        if (referenceCounter.release()) {
+            pool.recycle(origin ?: this)
+        }
     }
 
     override fun compact() {
-        buffer.compact()
+        raw.compact()
     }
 
-    override fun getByteAt(index: Int): Byte = buffer.get(index)
+    override fun getByteAt(index: Int): Byte = raw.get(index)
 
-    override fun getShortAt(index: Int): Short = buffer.getShort(index)
+    override fun getShortAt(index: Int): Short = raw.getShort(index)
 
-    override fun getIntAt(index: Int): Int = buffer.getInt(index)
+    override fun getIntAt(index: Int): Int = raw.getInt(index)
 
-    override fun getLongAt(index: Int): Long = buffer.getLong(index)
+    override fun getLongAt(index: Int): Long = raw.getLong(index)
 
     override fun setByteAt(index: Int, value: Byte) {
         randomAccess {
@@ -124,6 +132,29 @@ public class JvmBuffer(
         }
     }
 
+    override fun takeHead(index: Int): Buffer {
+        require(index >= 0) { "index should be non-negative: $index" }
+        val oldRead = readIndex
+        val oldWrite = writeIndex
+
+        raw.position(0)
+        raw.limit(index)
+
+        val head = JvmBuffer(raw.slice(), referenceCounter, pool, this).apply {
+            readIndex = min(capacity, oldRead)
+            writeIndex = min(capacity, oldWrite)
+        }
+
+        raw.position(index)
+        raw.limit(raw.capacity())
+        raw = raw.slice()
+
+        readIndex = max(0, oldRead - index)
+        writeIndex = max(0, oldWrite - index)
+
+        return head
+    }
+
     override fun copyFromBufferAt(index: Int, value: Buffer): Int {
         var current = index
         while (value.isNotEmpty) {
@@ -139,28 +170,26 @@ public class JvmBuffer(
         check(startIndex <= endIndex) { "startPosition should be less than or equal to endPosition: $startIndex, $endIndex" }
         check(endIndex <= value.size) { "endPosition should be less than or equal to value.size: $endIndex, ${value.size}" }
 
-
         val count = min(endIndex - startIndex, capacity - index)
 
         randomAccess {
             it.position(index)
-            buffer.put(value, startIndex, count)
+            raw.put(value, startIndex, count)
         }
 
         return count
     }
 
     private fun randomAccess(block: (ByteBuffer) -> Unit) {
-        val oldPosition = buffer.position()
-        val oldLimit = buffer.limit()
+        val oldPosition = raw.position()
+        val oldLimit = raw.limit()
         try {
-            buffer.position(0)
-            buffer.limit(capacity)
-            block(buffer)
+            raw.position(0)
+            raw.limit(capacity)
+            block(raw)
         } finally {
-            buffer.position(oldPosition)
-            buffer.limit(oldLimit)
+            raw.position(oldPosition)
+            raw.limit(oldLimit)
         }
     }
 }
-

@@ -31,7 +31,7 @@ public class FileBytesDestination(private val channel: FileChannel) : BytesDesti
 
         try {
             if (buffer is JvmBuffer) {
-                return channel.write(buffer.buffer)
+                return channel.write(buffer.raw)
             }
             return slowWrite(buffer)
         } catch (cause: Throwable) {

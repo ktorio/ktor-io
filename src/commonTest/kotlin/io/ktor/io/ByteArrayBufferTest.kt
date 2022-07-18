@@ -1,17 +1,40 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package io.ktor.io
 
+import io.ktor.io.utils.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ByteArrayWithDefaultPoolTest : BufferTest() {
-    override fun createBuffer(): Buffer = ByteArrayBuffer(ByteArrayPool.Default)
+class ByteArrayBufferWithDefaultPoolTest : BufferTest() {
+    override val pool: ObjectPool<Buffer> = ByteArrayBufferPool.Default as ObjectPool<Buffer>
 }
 
-class ByteArrayWithEmptyPoolTest : BufferTest() {
-    override fun createBuffer(): Buffer = ByteArrayBuffer(ByteArrayPool.Empty)
+class ByteArrayBufferWithEmptyPoolTest : BufferTest() {
+    override val pool: ObjectPool<Buffer> = ByteArrayBufferPool.Empty as ObjectPool<Buffer>
 }
 
-class ByteArrayTest {
+class ByteArrayBufferWithHeadTest : BufferTest() {
+    override val pool: ObjectPool<Buffer> = ByteArrayBufferPool.Empty as ObjectPool<Buffer>
+
+    override fun createBuffer(): Buffer = pool.borrow().takeHead(1024)
+}
+
+class ByteArrayBufferWithTailTest : BufferTest() {
+    override val pool: ObjectPool<Buffer> = ByteArrayBufferPool.Empty as ObjectPool<Buffer>
+
+    override fun createBuffer(): Buffer {
+        val buffer = pool.borrow()
+        buffer.takeHead(1024)
+        return buffer
+    }
+}
+
+class LeakCheckBufferTest : BufferTest() {
+    override val pool: ObjectPool<Buffer> = LeakDetectingPool() as ObjectPool<Buffer>
+}
+
+class ByteArrayBufferTest {
     @Test
     fun testConstructorFromArray() {
         val array = ByteArray(10)

@@ -266,6 +266,18 @@ public interface Buffer : Closeable {
     }
 
     /**
+     * Split this [Buffer] into head and tail.
+     *
+     * The head buffer will have bytes between 0 and index inside. And the tail buffer will have bytes between [index]
+     * and [capacity]. The [readIndex] and [writeIndex] will be pointing to the same bytes in the result buffers.
+     *
+     * The head of split is returned and this buffer becomes the tail.
+     *
+     * @return head of split
+     */
+    public fun takeHead(index: Int = writeIndex): Buffer
+
+    /**
      * Writes as many bytes as possible from the [value] at specific [index].
      *
      * The [value.readIndex] increased by amount of copied bytes.
@@ -418,6 +430,14 @@ public interface Buffer : Closeable {
 
             override fun setByteAt(index: Int, value: Byte) {
                 throw IndexOutOfBoundsException("Can't write to empty buffer")
+            }
+
+            override fun takeHead(index: Int): Buffer {
+                if (index != 0) {
+                    throw IndexOutOfBoundsException("Index($index) should be in range 0 and capacity($capacity)")
+                }
+
+                return this
             }
         }
     }

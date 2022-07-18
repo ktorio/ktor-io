@@ -23,6 +23,7 @@ class FilesTest {
 
         while (source.canRead()) {
             val buffer = source.read()
+            buffer.availableForRead
             destination.write(buffer)
             destination.awaitFreeSpace()
             source.awaitContent()
@@ -55,8 +56,6 @@ class FilesTest {
             val buffer = source.read()
             val count = destination.write(buffer)
             writeCount += count
-
-            println("Written $buffer $count/$writeCount/${content.length} bytes")
 
             destination.awaitFreeSpace()
             source.awaitContent()

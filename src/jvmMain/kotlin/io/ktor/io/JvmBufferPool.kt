@@ -7,7 +7,20 @@ public class JvmBufferPool(
     public val byteBufferPool: ObjectPool<ByteBuffer> = ByteBufferPool.Default
 ) : DefaultPool<JvmBuffer>(capacity) {
 
-    override fun produceInstance(): JvmBuffer = JvmBuffer(byteBufferPool)
+    override fun produceInstance(): JvmBuffer {
+        val buffer = byteBufferPool.borrow()
+
+        return JvmBuffer(buffer, pool = this).apply {
+            readIndex = 0
+            writeIndex = 0
+        }
+    }
+
+    override fun clearInstance(instance: JvmBuffer): JvmBuffer {
+        instance.readIndex = 0
+        instance.writeIndex = 0
+        return instance
+    }
 
     public companion object {
         public val Default: ObjectPool<JvmBuffer> = JvmBufferPool()
