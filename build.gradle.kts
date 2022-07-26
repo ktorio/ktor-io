@@ -2,7 +2,7 @@
  * Copyright 2014-2020 JetBrains s.r.o and contributors. Use of this source code is governed by the Apache 2.0 license.
  */
 
-import org.jetbrains.kotlin.konan.target.*
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
 buildscript {
     repositories {
@@ -25,6 +25,7 @@ buildscript {
 plugins {
     kotlin("multiplatform") version "1.6.20"
     id("org.jetbrains.kotlinx.kover") version "0.5.0"
+    `maven-publish`
 }
 
 group = "io.ktor"
@@ -50,15 +51,29 @@ kotlin {
             useJUnitPlatform()
         }
     }
-    js(IR){
+    js(IR) {
         browser()
         nodejs()
     }
 
-    mingwX64()
-    linuxX64()
-    macosX64()
-    macosArm64()
+    val platforms: List<KotlinNativeTarget> = listOf(
+        mingwX64(),
+        linuxX64(),
+        macosX64(),
+        macosArm64(),
+        iosX64(),
+        iosArm64(),
+        iosArm32(),
+        iosSimulatorArm64(),
+        watchosX86(),
+        watchosX64(),
+        watchosArm32(),
+        watchosArm64(),
+        watchosSimulatorArm64(),
+        tvosX64(),
+        tvosArm64(),
+        tvosSimulatorArm64()
+    )
 
     explicitApi()
 
@@ -73,10 +88,6 @@ kotlin {
                 implementation(kotlin("test"))
             }
         }
-        val jvmMain by getting
-        val jvmTest by getting
-        val jsMain by getting
-        val jsTest by getting
 
         val nativeMain by creating
         val nativeTest by creating
@@ -85,20 +96,14 @@ kotlin {
         nativeTest.dependsOn(commonTest)
         nativeTest.dependsOn(nativeMain)
 
-        val mingwX64Main by getting
-        val mingwX64Test by getting
-        val linuxX64Main by getting
-        val linuxX64Test by getting
-        val macosX64Main by getting
-        val macosX64Test by getting
-        val macosArm64Main by getting
-        val macosArm64Test by getting
+        val platformMain = platforms.map { sourceSets.getByName("${it.name}Main") }
+        val platformTest = platforms.map { sourceSets.getByName("${it.name}Test") }
 
-        listOf(linuxX64Main, mingwX64Main, macosX64Main, macosArm64Main).forEach {
+        platformMain.forEach {
             it.dependsOn(nativeMain)
         }
 
-        listOf(linuxX64Test, mingwX64Test, macosX64Test, macosArm64Test).forEach {
+        platformTest.forEach {
             it.dependsOn(nativeTest)
         }
     }
