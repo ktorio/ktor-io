@@ -9,8 +9,8 @@ public class JvmBufferPool(
 
     override fun produceInstance(): JvmBuffer {
         val buffer = byteBufferPool.borrow()
-
-        return JvmBuffer(buffer, pool = this).apply {
+        val resource = resource(buffer, byteBufferPool::recycle)
+        return JvmBuffer(resource).apply {
             readIndex = 0
             writeIndex = 0
         }

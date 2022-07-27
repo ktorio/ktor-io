@@ -11,30 +11,9 @@ import kotlin.math.*
  */
 public class JvmBuffer internal constructor(
     view: ByteBuffer,
-    private val referenceCounter: ReferenceCounter,
-    private val pool: ObjectPool<JvmBuffer>,
-    private val origin: JvmBuffer? = null
+    private val resource: Resource<ByteBuffer>
 ) : Buffer {
-
-    public constructor(
-        buffer: ByteBuffer,
-        pool: ObjectPool<JvmBuffer> = JvmBufferPool.Default
-    ) : this(buffer, AtomicReferenceCounter(), pool)
-
-    /**
-     * Creates a new [JvmBuffer] instance with the [ByteBuffer] instance from the [pool].
-     *
-     * The buffer is empty and prepared for write operations.
-     */
-    public constructor(capacity: Int = DEFAULT_BUFFER_SIZE) : this(
-        ByteBuffer.allocateDirect(capacity).limit(0),
-        referenceCounter = EmptyReferenceCounter,
-        pool = JvmBufferPool.Empty
-    )
-
-    init {
-        referenceCounter.retain()
-    }
+    private val link = resource.link()
 
     /**
      * Provides access to the underlying [ByteBuffer].
@@ -46,6 +25,8 @@ public class JvmBuffer internal constructor(
     @Suppress("CanBePrimaryConstructorProperty")
     public var raw: ByteBuffer = view
         private set
+
+    internal constructor(resource: Resource<ByteBuffer>) : this(resource.value, resource)
 
     override var readIndex: Int
         get() = raw.position()
@@ -91,9 +72,7 @@ public class JvmBuffer internal constructor(
      * Return the underlying buffer to the pool.
      */
     override fun close() {
-        if (referenceCounter.release()) {
-            pool.recycle(origin ?: this)
-        }
+        link.close()
     }
 
     override fun compact() {
@@ -140,7 +119,7 @@ public class JvmBuffer internal constructor(
         raw.position(0)
         raw.limit(index)
 
-        val head = JvmBuffer(raw.slice(), referenceCounter, pool, this).apply {
+        val head = JvmBuffer(raw.slice(), resource).apply {
             readIndex = min(capacity, oldRead)
             writeIndex = min(capacity, oldWrite)
         }
