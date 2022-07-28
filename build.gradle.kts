@@ -4,53 +4,18 @@
 
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
-buildscript {
-    repositories {
-        mavenLocal()
-        mavenCentral()
-        google()
-        gradlePluginPortal()
-        maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
-    }
-
-    val kotlin_version: String by extra
-    val atomicfu_version: String by extra
-
-    dependencies {
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
-        classpath("org.jetbrains.kotlinx:atomicfu-gradle-plugin:$atomicfu_version")
-    }
-}
-
 plugins {
-    kotlin("multiplatform") version "1.6.20"
-    id("org.jetbrains.kotlinx.kover") version "0.5.0"
+    org.jetbrains.kotlin.multiplatform
+    `kotlinx-atomicfu`
     `maven-publish`
 }
 
-group = "io.ktor"
-
-repositories {
-    mavenLocal()
-    mavenCentral()
-    maven(url = "https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven")
-    maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
+atomicfu {
+    dependenciesVersion = libs.versions.kotlinx.atomicfu.get()
 }
 
-apply(plugin = "kotlin-multiplatform")
-apply(plugin = "kotlinx-atomicfu")
-
-val coroutines_version: String by extra
-
 kotlin {
-    jvm {
-        compilations.all {
-            kotlinOptions.jvmTarget = "1.8"
-        }
-        testRuns["test"].executionTask.configure {
-            useJUnitPlatform()
-        }
-    }
+    jvm()
     js(IR) {
         browser()
         nodejs()
@@ -84,7 +49,7 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version")
+                api(libs.kotlinx.coroutines.test)
                 implementation(kotlin("test"))
             }
         }
