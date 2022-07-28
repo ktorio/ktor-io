@@ -184,3 +184,6 @@ fun Buffer.readUser(): User {
     return User(id, name, age, email)
 }
 ```
+
+
+## TODO: release() Topic
