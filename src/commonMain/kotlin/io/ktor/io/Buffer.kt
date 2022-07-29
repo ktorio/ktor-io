@@ -162,6 +162,31 @@ public interface Buffer : Readable, Writable {
 
     public fun readStealing(size: Int): Buffer = stealHead(readIndex + size)
 
+
+    //TODO: may be make it inline somehow?
+    //TODO: recursive naming
+    //if recursive=true, every component will be flatten, f.e.
+    // - if underlying buffer is Netty CompositeBuffer, it will iterate over it components, and not over one Netty Buffer
+    // - if underlying buffer is okio Buffer, it will iterate over underlying ByteArrays, and not over one okio Buffer
+    //TODO: this isn't really safe API
+    public fun iterateReadableComponents(
+        recursive: Boolean = true,
+        block: (component: ReadableComponent, last: Boolean) -> Boolean //if true, try to take next buffer, false otherwise
+    ) {
+        readableComponentsIterator(recursive).use { iterator ->
+            if (!iterator.hasNext()) return
+
+            do {
+                val next = iterator.next()
+                val hasNext = iterator.hasNext()
+                block(next, hasNext)
+            } while (hasNext)
+        }
+    }
+
+    //TODO: this is really UNSAFE API
+    public fun readableComponentsIterator(recursive: Boolean = true): ReadableComponentIterator
+
     /**
      * Release [Buffer] back to pool if necessary.
      */
