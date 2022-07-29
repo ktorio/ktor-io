@@ -8,262 +8,15 @@ import kotlin.math.min
  *
  * The buffer is not thread-safe by default.
  */
-public interface Buffer : Closeable {
+public interface Buffer : Readable, Writable {
     /**
      * The number of bytes can be stored in the buffer. Upper bound for write operations.
      */
     public val capacity: Int
+    override val readLimit: Int get() = writeIndex
+    override val writeLimit: Int get() = capacity
 
-    /**
-     * The index in buffer for the read operation.
-     *
-     * Should be between 0 and [writeIndex]
-     */
-    public var readIndex: Int
-
-    /**
-     * The index in buffer for the write operation.
-     *
-     * Should be between the [readIndex] and [capacity].
-     */
-    public var writeIndex: Int
-
-    /**
-     * Reads [Byte] at specific [index].
-     *
-     * The operation doesn't modify [readIndex] or [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [index + 1] is greater [capacity].
-     */
-    public fun getByteAt(index: Int): Byte
-
-    /**
-     * Writes [Byte] at specific [index].
-     *
-     * The operation doesn't modify [readIndex] or [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [index + 1] is greater than [capacity].
-     */
-    public fun setByteAt(index: Int, value: Byte)
-
-    /**
-     * Reads [Byte] from the buffer at [readIndex].
-     *
-     * @throws IndexOutOfBoundsException if [availableForRead] < 1.
-     */
-    public fun readByte(): Byte {
-        ensureCanRead(1)
-        return getByteAt(readIndex++)
-    }
-
-    /**
-     * Writes [Byte] to the buffer at [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [availableForWrite] < 1.
-     */
-    public fun writeByte(value: Byte) {
-        ensureCanWrite(1)
-        setByteAt(writeIndex++, value)
-    }
-
-    /**
-     * Reads [Boolean] at specific [index].
-     *
-     * The operation doesn't modify [readIndex] or [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [index + 1] is greater [capacity].
-     */
-    public fun getBooleanAt(index: Int): Boolean = getByteAt(index) != 0.toByte()
-
-    /**
-     * Writes [Boolean] at specific [index].
-     *
-     * The operation doesn't modify [readIndex] or [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [index + 1] is greater than [capacity].
-     */
-    public fun setBooleanAt(index: Int, value: Boolean) {
-        setByteAt(index, if (value) 1.toByte() else 0.toByte())
-    }
-
-    /**
-     * Read boolean from the buffer at [readIndex].
-     *
-     * @throws IndexOutOfBoundsException if [availableForRead] < 1.
-     */
-    public fun readBoolean(): Boolean = getBooleanAt(readIndex++)
-
-    /**
-     * Write boolean to the buffer at [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [availableForWrite] < 1.
-     */
-    public fun writeBoolean(value: Boolean) {
-        ensureCanWrite(1)
-        setBooleanAt(writeIndex++, value)
-    }
-
-    /**
-     * Reads [Short] at specific [index].
-     *
-     * The operation doesn't modify [readIndex] or [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [index + 2] is greater [capacity].
-     */
-    public fun getShortAt(index: Int): Short {
-        ensureCanRead(index, 2)
-
-        val byte1 = getByteAt(index)
-        val byte2 = getByteAt(index + 1)
-        return Short(byte1, byte2)
-    }
-
-    /**
-     * Writes [Short] at specific [index].
-     *
-     * The operation doesn't modify [readIndex] or [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [index + 2] is greater than [capacity].
-     */
-    public fun setShortAt(index: Int, value: Short) {
-        ensureCanWrite(index, 2)
-
-        setByteAt(index, value.highByte)
-        setByteAt(index + 1, value.lowByte)
-    }
-
-    /**
-     * Writes [Short] to the buffer at [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [availableForWrite] < 2.
-     */
-    public fun writeShort(value: Short) {
-        ensureCanWrite(2)
-
-        setShortAt(writeIndex, value)
-        writeIndex += 2
-    }
-
-    /**
-     * Reads [Short] from the buffer at [readIndex].
-     *
-     * @throws IndexOutOfBoundsException if [availableForRead] < 2.
-     */
-    public fun readShort(): Short {
-        ensureCanRead(2)
-
-        val result = getShortAt(readIndex)
-        readIndex += 2
-        return result
-    }
-
-    /**
-     * Reads [Int] at specific [index].
-     *
-     * The operation doesn't modify [readIndex] or [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [index + 4] is greater than [capacity].
-     */
-    public fun getIntAt(index: Int): Int {
-        ensureCanRead(index, 4)
-
-        val highShort = getShortAt(index)
-        val lowShort = getShortAt(index + 2)
-        return Int(highShort, lowShort)
-    }
-
-    /**
-     * Writes [Int] at specific [index].
-     *
-     * The operation doesn't modify [readIndex] or [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [index + 4] is greater than [capacity].
-     */
-    public fun setIntAt(index: Int, value: Int) {
-        ensureCanWrite(index, 4)
-
-        setShortAt(index, value.highShort)
-        setShortAt(index + 2, value.lowShort)
-    }
-
-    /**
-     * Reads [Int] from the buffer at [readIndex].
-     *
-     * @throws IndexOutOfBoundsException if [availableForRead] < 4.
-     */
-    public fun readInt(): Int {
-        ensureCanRead(4)
-
-        val result = getIntAt(readIndex)
-        readIndex += 4
-        return result
-    }
-
-    /**
-     * Writes [Int] to the buffer at [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [availableForWrite] < 4.
-     */
-    public fun writeInt(value: Int) {
-        ensureCanWrite(4)
-
-        setIntAt(writeIndex, value)
-        writeIndex += 4
-    }
-
-    /**
-     * Reads [Long] at specific [index].
-     *
-     * The operation doesn't modify [readIndex] or [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [index + 8] is greater than [capacity].
-     */
-    public fun getLongAt(index: Int): Long {
-        ensureCanRead(index, 8)
-
-        val highInt = getIntAt(index)
-        val lowInt = getIntAt(index + 4)
-        return Long(highInt, lowInt)
-    }
-
-    /**
-     * Writes [Long] at specific [index].
-     *
-     * The operation doesn't modify [readIndex] or [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [index + 8] is greater than [capacity] or not enough space available.
-     */
-    public fun setLongAt(index: Int, value: Long) {
-        ensureCanWrite(index, 8)
-
-        setIntAt(index, value.highInt)
-        setIntAt(index + 4, value.lowInt)
-    }
-
-    /**
-     * Reads [Long] from the buffer at [readIndex].
-     *
-     * @throws IndexOutOfBoundsException if [availableForRead] < 8.
-     */
-    public fun readLong(): Long {
-        ensureCanRead(8)
-
-        val result = getLongAt(readIndex)
-        readIndex += 8
-        return result
-    }
-
-    /**
-     * Writes [Long] to the buffer at [writeIndex].
-     *
-     * @throws IndexOutOfBoundsException if [availableForWrite] < 8.
-     */
-    public fun writeLong(value: Long) {
-        ensureCanWrite(8)
-
-        setLongAt(writeIndex, value)
-        writeIndex += 8
-    }
+    //TODO: may be move other buffer/ByteArray methods to Readable and Writable?
 
     /**
      * Writes as many bytes as possible from the [value] at specific [index].
@@ -386,6 +139,29 @@ public interface Buffer : Closeable {
         writeIndex = count
     }
 
+    //on buffer, we can read/write absolutely up to capacity, not read limit
+    public override fun ensureCanReadAt(index: Int, count: Int) {
+        if (index + count > capacity) {
+            throw IndexOutOfBoundsException("Can't read $count bytes at index $index. Capacity: $capacity.")
+        }
+    }
+
+    //buffer specific methods
+
+    //TODO: do we need to save indexes when stealing? - looks like yes
+    //TODO: readLimit should not affect steal operations?
+
+    //current instance becomes unusable(empty), returned will store the data in read only state
+    public fun stealReadOnly(): ReadOnlyBuffer
+
+    //current instance becomes unusable(empty)
+    //TODO: looks similar to netty5 Send<Buffer> - ownership change
+    public fun steal(): Buffer //useful for composite buffers
+
+    public fun stealHead(index: Int): Buffer
+
+    public fun readStealing(size: Int): Buffer = stealHead(readIndex + size)
+
     /**
      * Release [Buffer] back to pool if necessary.
      */
@@ -396,7 +172,7 @@ public interface Buffer : Closeable {
         /**
          * The buffer with zero capacity.
          */
-        public val Empty: Buffer = object : Buffer {
+        public val Empty: Buffer = object : Buffer, ReadOnlyBuffer {
             override val capacity: Int
                 get() = 0
 
@@ -419,6 +195,51 @@ public interface Buffer : Closeable {
             override fun setByteAt(index: Int, value: Byte) {
                 throw IndexOutOfBoundsException("Can't write to empty buffer")
             }
+
+            override fun steal(): Buffer = this
+            override fun stealReadOnly(): ReadOnlyBuffer = this
+
+            override fun stealHead(index: Int): Buffer {
+                TODO("Not yet implemented")
+            }
+
+
+            override fun copy(): ReadOnlyBuffer = this
+
+            override fun getBufferAt(index: Int, size: Int): ReadOnlyBuffer {
+                TODO("Not yet implemented")
+            }
         }
     }
+}
+
+internal fun Buffer.reset() {
+    readIndex = 0
+    writeIndex = 0
+}
+
+
+//TODO remove it
+//buffer isn't closed in the end of function, so we can write to it later
+private fun parse(buffer: Buffer): Pair<ReadOnlyBuffer, ReadOnlyBuffer> {
+    val length = buffer.readInt()
+    //we deattach head from base buffer,
+    // so someone can safely write to it,
+    // and we have head which we can send to another thread
+    return buffer
+        .readStealing(length)
+        .stealReadOnly() //here we can already send this buffer somewhere, and process it there
+        .use { frame ->
+            //frame.readIndex = buffer.readIndex
+            //frame.writeIndex|readLimit = buffer.readIndex + length
+
+            //buffer.readIndex = 0
+            //buffer.writeIndex = min(buffer.readIndex + length, buffer.writeIndex)
+
+            val header = frame.readLong()
+            val lengthSplit = frame.readInt()
+            val b1 = frame.readBuffer(lengthSplit)
+            val b2 = frame.readBuffer()
+            b1 to b2
+        }
 }
